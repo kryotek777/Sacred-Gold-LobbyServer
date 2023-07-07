@@ -1,0 +1,1 @@
+﻿Sacred.LobbyServer.Start(); 
