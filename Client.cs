@@ -35,7 +35,7 @@ class Client
 
         Console.WriteLine($"Incoming connection from: {socket.RemoteEndPoint}");
 
-        while (socket.Connected || !stream.CanRead)
+        while (socket.Connected)
         {
             try
             {
@@ -83,6 +83,9 @@ class Client
 
             case TincatMsgType.CUSTOMDATA:
                 HandleCustomData(packet);
+                break;
+
+            case TincatMsgType.STAYINGALIVE:
                 break;
 
             default:
