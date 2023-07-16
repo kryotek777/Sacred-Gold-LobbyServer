@@ -24,7 +24,15 @@ internal static class LobbyServer
             {
                 while (client.packets.TryDequeue(out var packet))
                 {
-                    client.HandlePacket(packet);
+                    try
+                    {
+                        client.HandlePacket(packet);
+                    }
+                    catch (Exception ex)
+                    {
+                        var ip = client.socket.RemoteEndPoint as IPEndPoint;
+                        Console.WriteLine($"Error handling packet for client {client.connectionId} with ip {ip}: {ex.Message}");
+                    }
                 }
             }
         }
