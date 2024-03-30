@@ -39,17 +39,30 @@ class Client
         {
             try
             {
+                //Read the header
                 stream.ReadExactly(header.AsSpan());
 
-                if (ValidateHeader(header))
+                //Reject packets with invalid Magic Number
+                if (header.magic == TincatHeader.TincatMagic)
                 {
+                    //Read the payload
                     var payload = new byte[header.dataLength];
                     stream.ReadExactly(payload, 0, header.dataLength);
-                    packets.Enqueue(new(header, payload));
+
+                    //Reject packets with invalid CRC32
+                    var crc32 = CRC32.Compute(payload);
+                    if(crc32 == header.crc32)
+                    {
+                        packets.Enqueue(new(header, payload));
+                    }
+                    else
+                    {
+                        Log.Warning($"CRC32 Mismatch in Tincat Packet received from {socket.RemoteEndPoint}: Expected 0x{header.crc32} but got 0x{crc32}");
+                    }
                 }
                 else
                 {
-                    Log.Warning($"Invalid packet received from {socket.RemoteEndPoint}");
+                    Log.Warning($"Invalid Tincat Magic received from {socket.RemoteEndPoint}: Expected 0x{TincatHeader.TincatMagic:X}) but got 0x{header.magic:X}");
                 }
             }
             catch(EndOfStreamException)
@@ -65,11 +78,6 @@ class Client
         }
 
         Log.Info($"Connection closed: {socket.RemoteEndPoint}");
-    }
-
-    private static bool ValidateHeader(in TincatHeader header)
-    {
-        return true;
     }
 
     public void HandlePacket(TincatPacket packet)
