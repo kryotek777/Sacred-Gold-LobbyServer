@@ -33,7 +33,7 @@ class Client
     {
         TincatHeader header = default;
 
-        Console.WriteLine($"Incoming connection from: {socket.RemoteEndPoint}");
+        Log.Info($"Incoming connection from: {socket.RemoteEndPoint}");
 
         while (socket.Connected)
         {
@@ -49,22 +49,22 @@ class Client
                 }
                 else
                 {
-                    Console.WriteLine($"Invalid packet received from {socket.RemoteEndPoint}");
+                    Log.Warning($"Invalid packet received from {socket.RemoteEndPoint}");
                 }
             }
             catch(EndOfStreamException)
             {
-                Console.WriteLine($"Reached end of stream while reading packet from {socket.RemoteEndPoint}");
+                Log.Error($"Reached end of stream while reading packet from {socket.RemoteEndPoint}");
                 break;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading packet from {socket.RemoteEndPoint}:\n{ex}");
+                Log.Error($"Error reading packet from {socket.RemoteEndPoint}:\n{ex}");
             }
 
         }
 
-        Console.WriteLine($"Connection closed: {socket.RemoteEndPoint}");
+        Log.Info($"Connection closed: {socket.RemoteEndPoint}");
     }
 
     private static bool ValidateHeader(in TincatHeader header)
@@ -90,9 +90,9 @@ class Client
 
             default:
                 if(Enum.IsDefined(packet.Header.msgType))
-                    Console.WriteLine($"Unhandled tincat packet {type}");
+                    Log.Warning($"Unhandled tincat packet {type}");
                 else
-                    Console.WriteLine($"Unhandled tincat packet {(int)type}");
+                    Log.Warning($"Unhandled tincat packet {(int)type}");
                 break;
         }
     }
@@ -130,7 +130,7 @@ class Client
                     }
                     SendSacredPacket(16, ms.ToArray());
 
-                    Console.WriteLine("New client logged in!");
+                    Log.Info("New client logged in!");
                 }
                 break;
 
@@ -151,7 +151,7 @@ class Client
                         ip = IPAddress.Parse(str.AsSpan().Trim('\n')).GetAddressBytes();
                     }
 
-                    Console.WriteLine($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {new IPAddress(ip)} port {serverInfo.port}");
+                    Log.Info($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {new IPAddress(ip)} port {serverInfo.port}");
 
                     response.Write(ip);
 
@@ -167,7 +167,7 @@ class Client
                     serverInfo.maxPlayers = newInfo.maxPlayers;
                     serverInfo.currentPlayers = newInfo.currentPlayers;
 
-                    Console.WriteLine($"GameServer #{serverInfo.serverId} \"{serverInfo.GetName()}\" changed public info");
+                    Log.Info($"GameServer #{serverInfo.serverId} \"{serverInfo.GetName()}\" changed public info");
 
 
                     foreach (var client in LobbyServer.clients.Where(x => x.isServer == false))
@@ -207,7 +207,7 @@ class Client
                 break;
 
             default:
-                Console.WriteLine($"Unhandled packet type {header.type1}");
+                Log.Warning($"Unhandled packet type {header.type1}");
                 break;
         }
 

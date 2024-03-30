@@ -7,17 +7,22 @@ internal static class LobbyServer
 {
     public static readonly ConcurrentBag<Client> clients = new();
     private static uint connectionIdCounter = 0;
-    private const int port = 7066;
 
     public static void Start()
     {
+        Config.Load();
+
         var t1 = Utils.RunTask(AcceptLoop);
         var t2 = Utils.RunTask(HandleClients);
         Task.WaitAll(t1, t2);
+
+        Log.Info("Exiting...");
     }
 
     private static void HandleClients()
     {
+        Log.Info("Starting handling clients");
+
         while (true)
         {
             foreach (var client in clients)
@@ -31,7 +36,9 @@ internal static class LobbyServer
                     catch (Exception ex)
                     {
                         var ip = client.socket.RemoteEndPoint as IPEndPoint;
-                        Console.WriteLine($"Error handling packet for client {client.connectionId} with ip {ip}: {ex.Message}");
+
+                        Log.Error($"Error handling packet for client {client.connectionId} with ip {ip}: {ex.Message}");
+                        Log.Trace(ex.ToString());
                     }
                 }
             }
@@ -40,8 +47,11 @@ internal static class LobbyServer
 
     private static void AcceptLoop()
     {
-        var listener = new TcpListener(IPAddress.Any, port);
+        var listener = new TcpListener(IPAddress.Any, Config.Instance.LobbyPort);
         listener.Start();
+
+        Log.Info("Started accepting clients");
+
         while (true)
         {
             var socket = listener.AcceptSocket();
