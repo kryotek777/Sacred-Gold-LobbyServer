@@ -1,29 +1,104 @@
-# Sacred-Gold-LobbyServer
+# Sacred Gold Lobby Server
 
-A reverse engineered lobbyserver for Sacred Gold
+This project is a reimplementation of the lobby servers once used in the game "Sacred" developed by Ascaron Entertainment.
 
-# Host the lobbyserver
+## Overview
 
-Port forward 7066/tcp on your router
-Run the executable
+The lobby servers were responsible for maintaining lists of both official and community-run game servers, allowing clients to discover and connect to available game rooms.
 
-# Host a game
+This reimplementation aims to recreate the functionality of the original lobby servers, providing a platform for players to discover and connect to active game servers for multiplayer gameplay.
 
-**DO NOT HOST CREATE A GAMESERVER FROM THE IN-GAME's UI** it doesn't join right away and you cannot go back, you'll be stuck and need to restart the game.
+## Features
 
-Open Gameserver.cfg and change these lines
+### Implemented
+- **Login**: The servers once required registration on the ascaron website, here any username and password combination will do.
+- **Open Net**: This gamemode allows you to use your local characters to play online!
+- **Server List**: GameServers can connect to the lobbyserver and be added to the list of available servers
+
+### Not implemented
+- **Lobby Chat**: You can still chat while in game! But you still cannot chat in the lobby.
+- **Closed Net**: In this gamemode the lobbyserver stores your characters so you can't load cheated ones.
+- **Hosting a GameServer from the lobby's UI**: This will lock your game! Always use GameServer.exe
+
+## Getting Started
+
+### Download the LobbyServer
+1. Download the latest release from the box on the right
+2. Extract the archive
+3. (Optionally) modify 'config.json' to suit your needs
+
+### Port forwarding
+The port 7066/tcp (unless modified in the config) needs to be port forwarded if hosting a lobbyserver over the internet
+
+Now when you run the executable GameServers and Clients will be able to connect to the lobbyserver!
+
+### GameServer configuration
+This needs to be done for every person that wants to host a game using GameServer.exe!
+
+Open the file GameServer.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:  
 
 `NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066`
+`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.json)
 
-Open GameServer.exe and select Internet
-Port forward 2005/udp and 2006/tcp on your router (or the custom ports you configured) 
+Ports 2005/udp and 2006/tcp need to be port forwarded if hosting a gameserver over the internet
 
-# Connect
+Now open GameServer.exe, set a game name, click on the radio button labeled "Internet" and then click "Ok"  
+The gameserver should now connect to the lobbyserver!
 
-Open Settings.cfg and change these lines
+### Client configuration
+
+Open the file Settings.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:
 
 `NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066`<br>
+`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.json)  
 `NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC`<br>
 `NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9`
+
+You can also write the CD Keys from the in-game UI
+
+Now open Sacred, click on "Multiplayer" then "Open Internet", choose a random username and password, then click "Log On".
+After selecting a character you should automatically connect to a room and see the server list!
+
+## Building
+
+To get started with this reimplementation, follow these steps:
+
+1. **Clone the Repository**: Clone this repository to your local machine using Git:
+
+    ```bash
+    git clone https://github.com/yourusername/sacred-lobby-server.git
+    ```
+
+2. **Build the Project**: Using Visual Studio or the .NET CLI, build the lobby server project:
+
+    ```bash
+    dotnet build LobbyServer.csproj
+    ```
+
+3. **Run the Lobby Server**: Navigate to the output directory containing the built executable and run it:
+
+    - **Windows**:
+    ```cmd
+    cd bin/Debug/net8.0
+    LobbyServer.exe
+    ```
+
+    - **Linux**:
+    ```bash
+    cd bin/Debug/net8.0
+    chmod +x LobbyServer
+    ./LobbyServer
+    ```
+
+## Contributing
+
+Contributions to this project are welcome! If you'd like to contribute, please fork the repository, make your changes, and submit a pull request.
+
+## License
+
+This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+Special thanks to Ascaron Entertainment for creating Sacred and inspiring this reimplementation!
+
