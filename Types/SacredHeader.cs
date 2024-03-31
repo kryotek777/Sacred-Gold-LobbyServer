@@ -11,9 +11,9 @@ public unsafe struct SacredHeader
     [FieldOffset(0)]
     public ushort magic;
     [FieldOffset(2)]
-    public ushort type1;
+    public SacredMsgType type1;
     [FieldOffset(4)]
-    public ushort type2;
+    public SacredMsgType type2;
     [FieldOffset(6)]
     public uint unknown1;
     [FieldOffset(10)]

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using Sacred.Types;
 namespace Sacred;
 
@@ -51,7 +52,7 @@ class Client
 
                     //Reject packets with invalid CRC32
                     var crc32 = CRC32.Compute(payload);
-                    if(crc32 == header.crc32)
+                    if (crc32 == header.crc32)
                     {
                         packets.Enqueue(new(header, payload));
                     }
@@ -65,7 +66,7 @@ class Client
                     Log.Warning($"Invalid Tincat Magic received from {socket.RemoteEndPoint}: Expected 0x{TincatHeader.TincatMagic:X}) but got 0x{header.magic:X}");
                 }
             }
-            catch(EndOfStreamException)
+            catch (EndOfStreamException)
             {
                 Log.Error($"Reached end of stream while reading packet from {socket.RemoteEndPoint}");
                 break;
@@ -97,7 +98,7 @@ class Client
                 break;
 
             default:
-                if(Enum.IsDefined(packet.Header.msgType))
+                if (Enum.IsDefined(packet.Header.msgType))
                     Log.Warning($"Unhandled tincat packet {type}");
                 else
                     Log.Warning($"Unhandled tincat packet {(int)type}");
@@ -122,11 +123,11 @@ class Client
         Utils.FromSpan(packet.Payload.AsSpan(0, SacredHeader.HeaderSize), out SacredHeader header);
         var payload = packet.Payload.AsSpan(SacredHeader.HeaderSize);
 
-        ReplyOk(header.type1);
+        ReplyOk((int)header.type1);
 
         switch (header.type1)
         {
-            case 2:
+            case SacredMsgType.ClientLoginRequest:
                 {
                     var ms = new MemoryStream();
                     var response = new BinaryWriter(ms);
@@ -142,33 +143,11 @@ class Client
                 }
                 break;
 
-            case 12:
-                {
-                    Utils.FromSpan(payload, out serverInfo);
-                    serverInfo.serverId = (int)connectionId;
-
-                    var ms = new MemoryStream();
-                    var response = new BinaryWriter(ms);
-                    var ep = socket.RemoteEndPoint as IPEndPoint;
-                    var ip = ep!.Address.GetAddressBytes();
-
-                    if(Utils.IsInternal(ep.Address))
-                    {
-                        using var cl = new HttpClient();
-                        var str = cl.GetStringAsync("http://icanhazip.com").Result;
-                        ip = IPAddress.Parse(str.AsSpan().Trim('\n')).GetAddressBytes();
-                    }
-
-                    Log.Info($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {new IPAddress(ip)} port {serverInfo.port}");
-
-                    response.Write(ip);
-
-                    isServer = true;
-                    SendSacredPacket(38, ms.ToArray());
-                }
+            case SacredMsgType.ServerLoginRequest:
+                HandleServerLoginRequest(packet.Header, header, payload);
                 break;
 
-            case 13:
+            case SacredMsgType.ServerChangePublicInfo:
                 {
                     Utils.FromSpan(payload, out ServerInfo newInfo);
                     serverInfo.flags = newInfo.flags;
@@ -180,46 +159,136 @@ class Client
 
                     foreach (var client in LobbyServer.clients.Where(x => x.isServer == false))
                     {
+                        var info = client.serverInfo;
+                        info.hidden = 0;
                         client.SendSacredPacket(12, serverInfo.AsSpan(), unknown1: 0x12BBCCDD, tincatUnknown: packet.Header.unknown);
                     }
                 }
                 break;
 
-            case 17:
-                {
-                    var ms = new MemoryStream();
-                    var response = new BinaryWriter(ms);
-
-                    response.Write(0);
-                    //Join Channel #0
-                    SendSacredPacket(26, ms.ToArray());
-
-                    foreach (var client in LobbyServer.clients.Where(x => x.isServer == true))
-                    {
-                        var info = new ServerInfo()
-                        {
-                            currentPlayers = client.serverInfo.currentPlayers,
-                            maxPlayers = client.serverInfo.maxPlayers,
-                            flags = client.serverInfo.flags,
-                            ipAddress = client.serverInfo.ipAddress,
-                            port = client.serverInfo.port,
-                            version = 0xDCB8,
-                            serverId = (int)client.connectionId
-
-                        };
-                        info.SetName(client.serverInfo.GetName());
-                        SendSacredPacket(12, info.AsSpan(), unknown1: 0x12BBCCDD, tincatUnknown: packet.Header.unknown);
-                    }
-
-                }
+            case SacredMsgType.ClientCharacterSelect:
+                HandleCharacterSelect(packet.Header, header, payload);
                 break;
+
+            case SacredMsgType.ClientChatMessage:
+                {
+                    DumpPacket(packet.Header, header, payload);
+                    Utils.FromSpan<SacredChatMessageData>(payload, out var data);
+                    HandleChatMessage(packet.Header, header, data);
+                    break;
+                }
 
             default:
-                Log.Warning($"Unhandled packet type {header.type1}");
+                Log.Warning($"Unhandled packet type {(int)header.type1} from {socket.RemoteEndPoint}");
+                DumpPacket(packet.Header, header, payload);
                 break;
         }
+    }
 
+    private void DumpPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        Log.Trace(FormatPacket(tincatHeader, sacredHeader, payload));
+    }
 
+    private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("Dumping packet:");
+        sb.AppendLine("---Tincat Header---");
+        sb.AppendLine($"magic: {tincatHeader.magic:X}");
+        sb.AppendLine($"from: {tincatHeader.from:X}");
+        sb.AppendLine($"to: {tincatHeader.to:X}");
+        sb.AppendLine($"msgType: {tincatHeader.msgType}");
+        sb.AppendLine($"unknown: {tincatHeader.unknown:X}");
+        sb.AppendLine($"dataLength: {tincatHeader.dataLength}");
+        sb.AppendLine($"crc32: {tincatHeader.crc32:X}");
+        sb.AppendLine();
+        sb.AppendLine("---Sacred Header---");
+        sb.AppendLine($"magic: {sacredHeader.magic:X}");
+        sb.AppendLine($"type1: {sacredHeader.type1}");
+        sb.AppendLine($"type2: {sacredHeader.type2}");
+        sb.AppendLine($"unknown1: {sacredHeader.unknown1:X}");
+        sb.AppendLine($"dataLength: {sacredHeader.dataLength}");
+        sb.AppendLine($"unknown2: {sacredHeader.unknown2:X}");
+        sb.AppendLine();
+
+        FormatBytes(payload, sb);
+
+        return sb.ToString();
+    }
+
+    private void FormatBytes(ReadOnlySpan<byte> data, StringBuilder sb)
+    {
+        const int lineLength = 8;
+        for (int i = 0; i < data.Length;)
+        {
+            var b = data[i];
+            char c = (char)b;
+
+            sb.Append($"{b:X2} [{(char.IsControl(c) ? ' ' : c)}] ");
+
+            if (++i % lineLength == 0)
+                sb.AppendLine();
+        }
+    }
+
+    private string FormatBytes(ReadOnlySpan<byte> data)
+    {
+        var sb = new StringBuilder();
+        FormatBytes(data, sb);
+        return sb.ToString();
+    }
+
+    private void HandleServerLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {   
+        //This client is a GameServer, we need to save it's info 
+        isServer = true;
+        Utils.FromSpan(payload, out serverInfo);
+        serverInfo.serverId = (int)connectionId;
+
+        //Get the public ip address of the server
+        var ep = socket.RemoteEndPoint as IPEndPoint;
+        var ip = ep!.Address.GetAddressBytes();
+
+        if (Utils.IsInternal(ep.Address))
+        {
+            using var cl = new HttpClient();
+            var str = cl.GetStringAsync("http://icanhazip.com").Result;
+            ip = IPAddress.Parse(str.AsSpan().Trim('\n')).GetAddressBytes();
+        }
+
+        Log.Info($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {new IPAddress(ip)} port {serverInfo.port}");
+
+        SendSacredPacket(38, ip);
+    }
+
+    private void HandleCharacterSelect(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        //Immediately join Room #0
+        //Rooms aren't implemented yet, but if we force the right answer the client will happily join
+        JoinRoom(0);
+
+        //Send the server list to the client
+        foreach (var client in LobbyServer.clients.Where(x => x.isServer == true))
+        {
+            var info = client.serverInfo;
+            info.hidden = 0;
+
+            SendSacredPacket(12, info.AsSpan(), unknown1: 0x12BBCCDD, tincatUnknown: tincatHeader.unknown);
+        }
+    }
+
+    private void HandleChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, SacredChatMessageData message)
+    {
+        var msg = message.GetMessageString();
+
+        Log.Info($"Client {socket.RemoteEndPoint} sent a chat message: {msg}");
+    }
+
+    private void JoinRoom(int roomNumber)
+    {
+        SendSacredPacket(26, BitConverter.GetBytes(roomNumber));
     }
 
     private void ReplyOk(int type, int value = 0)
@@ -262,8 +331,8 @@ class Client
         {
             magic = SacredHeader.SacredMagic,
             dataLength = payload.Length + SacredHeader.HeaderSize - 4, //I don't understand WHY -4, but it's like that...
-            type1 = type,
-            type2 = type2 != 0 ? type2 : type,
+            type1 = (SacredMsgType)(type),
+            type2 = (SacredMsgType)(type2 != 0 ? type2 : type),
             unknown1 = unknown1,
             unknown2 = unknown2
         };
