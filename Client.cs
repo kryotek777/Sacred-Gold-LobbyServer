@@ -68,17 +68,18 @@ class Client
             }
             catch (EndOfStreamException)
             {
-                Log.Error($"Reached end of stream while reading packet from {socket.RemoteEndPoint}");
+                //Connection has been closed
                 break;
             }
             catch (Exception ex)
             {
                 Log.Error($"Error reading packet from {socket.RemoteEndPoint}:\n{ex}");
             }
-
         }
 
         Log.Info($"Connection closed: {socket.RemoteEndPoint}");
+
+        LobbyServer.clients.Remove(this);
     }
 
     public void HandlePacket(TincatPacket packet)

@@ -5,7 +5,8 @@ namespace Sacred;
 
 internal static class LobbyServer
 {
-    public static readonly ConcurrentBag<Client> clients = new();
+    public static readonly SynchronizedCollection<Client> clients = new();
+    
     private static uint connectionIdCounter = 0;
 
     public static void Start()
