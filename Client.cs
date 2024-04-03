@@ -250,18 +250,21 @@ class Client
 
         //Get the public ip address of the server
         var ep = socket.RemoteEndPoint as IPEndPoint;
-        var ip = ep!.Address.GetAddressBytes();
+        var ip = ep!.Address;
 
         if (Utils.IsInternal(ep.Address))
         {
             using var cl = new HttpClient();
             var str = cl.GetStringAsync("http://icanhazip.com").Result;
-            ip = IPAddress.Parse(str.AsSpan().Trim('\n')).GetAddressBytes();
+            ip = IPAddress.Parse(str.AsSpan().Trim('\n'));
         }
 
-        Log.Info($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {new IPAddress(ip)} port {serverInfo.port}");
+        var ipBytes = ip.GetAddressBytes();
 
-        SendSacredPacket(38, ip);
+        serverInfo.ipAddress = BitConverter.ToInt32(ipBytes);
+        Log.Info($"New GameServer connected #{serverInfo.serverId} \"{serverInfo.GetName()}\" with ip {ip} port {serverInfo.port}");
+
+        SendSacredPacket(38, ipBytes);
     }
 
     private void HandleCharacterSelect(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
