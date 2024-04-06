@@ -1,4 +1,4 @@
-namespace Sacred;
+namespace Sacred.Networking.Types;
 
 public enum SacredMsgType : ushort
 {
@@ -13,5 +13,6 @@ public enum SacredMsgType : ushort
     AcceptClientLogin = 16,
     UpdateServerInfo = 12,
     LobbyResult = 15,
-    ServerStartInfo = 38,
+    AcceptServerLogin = 38,
+    ClientJoinRoom = 26
 }

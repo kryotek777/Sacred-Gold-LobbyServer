@@ -1,4 +1,4 @@
-namespace Sacred.Types;
+namespace Sacred.Networking.Types;
 
 public enum TincatMsgType : uint
 {

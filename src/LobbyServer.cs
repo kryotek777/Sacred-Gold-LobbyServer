@@ -1,11 +1,14 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using Sacred.Networking;
+using Sacred.Networking.Types;
 namespace Sacred;
 
 internal static class LobbyServer
 {
-    public static readonly SynchronizedCollection<Client> clients = new();
+    private static readonly ReaderWriterLockSlim clientsLock = new();
+    private static readonly List<SacredClient> clients = new();
     
     private static uint connectionIdCounter = 0;
 
@@ -13,37 +16,55 @@ internal static class LobbyServer
     {
         Config.Load();
 
-        var t1 = Utils.RunTask(AcceptLoop);
-        var t2 = Utils.RunTask(HandleClients);
-        Task.WaitAll(t1, t2);
+        AcceptLoop();
 
         Log.Info("Exiting...");
     }
 
-    private static void HandleClients()
+    public static void AddClient(SacredClient client)
     {
-        Log.Info("Starting handling clients");
+        clientsLock.EnterWriteLock();
+        clients.Add(client);
+        clientsLock.ExitWriteLock();
+    }
 
-        while (true)
+    public static void RemoveClient(SacredClient client)
+    {
+        clientsLock.EnterWriteLock();
+        clients.Remove(client);
+        clientsLock.ExitWriteLock();
+    }
+
+    public static void SendPacketToAllGameClients(TincatPacket packet)
+    {
+        clientsLock.EnterReadLock();
+        foreach (var client in clients.Where(x => x.ClientType == ClientType.GameClient))
         {
-            foreach (var client in clients)
-            {
-                while (client.packets.TryDequeue(out var packet))
-                {
-                    try
-                    {
-                        client.HandlePacket(packet);
-                    }
-                    catch (Exception ex)
-                    {
-                        var ip = client.socket.RemoteEndPoint as IPEndPoint;
-
-                        Log.Error($"Error handling packet for client {client.connectionId} with ip {ip}: {ex.Message}");
-                        Log.Trace(ex.ToString());
-                    }
-                }
-            }
+            client.SendPacket(packet);
         }
+        clientsLock.ExitReadLock();
+    }
+
+    public static void SendPacketToAllGameServers(TincatPacket packet)
+    {
+        clientsLock.EnterReadLock();
+        foreach (var client in clients.Where(x => x.ClientType == ClientType.GameServer))
+        {
+            client.SendPacket(packet);
+        }
+        clientsLock.ExitReadLock();
+    }
+
+    public static List<ServerInfo> GetAllServerInfos()
+    {
+        clientsLock.EnterReadLock();
+        var list = clients
+            .Where(x => x.ClientType == ClientType.GameServer && x.ServerInfo != null)
+            .Select(x => x.ServerInfo)
+            .ToList();
+        clientsLock.ExitReadLock();
+
+        return list!;
     }
 
     private static void AcceptLoop()
@@ -56,9 +77,11 @@ internal static class LobbyServer
         while (true)
         {
             var socket = listener.AcceptSocket();
-            var client = new Client(socket, ++connectionIdCounter);
-            clients.Add(client);
-            client.Run();
+            var connection = new SacredConnection(socket);
+            var client = new SacredClient(connection, ++connectionIdCounter);
+            client.Start();
         }
     }
+
+
 }

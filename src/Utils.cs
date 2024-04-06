@@ -1,42 +1,45 @@
 using System.Net;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 namespace Sacred;
 
 internal static class Utils
 {
-    public static Task RunTask(Action action)
+    public static Task RunTask(Action action, CancellationToken cancellationToken)
     {
         return Task.Factory.StartNew(
             action,
-            CancellationToken.None,
+            cancellationToken,
             TaskCreationOptions.LongRunning,
             TaskScheduler.Default
         );
     }
 
-    public static unsafe void FromSpan<T>(ReadOnlySpan<byte> span, out T value) where T : unmanaged
-    {
-        if (span.Length != sizeof(T))
-            throw new ArgumentException($"Mismatched sizes: expected {sizeof(T)} got {span.Length}");
+    public static Task RunTask(Action action) => RunTask(action, CancellationToken.None);
 
-        fixed (byte* p = span)
-        {
-            value = *(T*)p;
-        }
+    public static void FromSpan<T>(ReadOnlySpan<byte> span, out T value) where T : unmanaged
+    {
+        value = MemoryMarshal.Read<T>(span);
     }
 
-    public static unsafe ReadOnlySpan<byte> ToSpan<T>(in T value) where T : unmanaged
+    public static ReadOnlySpan<byte> SliceNullTerminated(this ReadOnlySpan<byte> span)
     {
-        fixed (T* p = &value)
-        {
-            return new(p, sizeof(T));
-        }
+        return span.Slice(0, span.IndexOf((byte)0));
     }
 
-    public static bool IsInternal(IPAddress toTest)
+    public static IPAddress GetExternalIp()
     {
-        if (IPAddress.IsLoopback(toTest)) return true;
+        using var cl = new HttpClient();
+        var str = cl.GetStringAsync("http://icanhazip.com").Result;
+        var ip = IPAddress.Parse(str.AsSpan().Trim('\n'));
+        return ip;
+    }
 
-        byte[] bytes = toTest.GetAddressBytes();
+    public static bool IsInternal(this IPAddress ip)
+    {
+        if (IPAddress.IsLoopback(ip)) return true;
+
+        byte[] bytes = ip.GetAddressBytes();
         return bytes[0] switch
         {
             10 => true,
@@ -44,5 +47,10 @@ internal static class Utils
             192 => bytes[1] == 168,
             _ => false,
         };
+    }
+
+    public static int ToInt(this IPAddress ip)
+    {
+        return BitConverter.ToInt32(ip.GetAddressBytes());
     }
 }
