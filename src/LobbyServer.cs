@@ -1,24 +1,32 @@
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Sacred.Networking;
 using Sacred.Networking.Types;
 namespace Sacred;
 
-internal static class LobbyServer
+internal static partial class LobbyServer
 {
     private static readonly ReaderWriterLockSlim clientsLock = new();
     private static readonly List<SacredClient> clients = new();
-    
+    private static readonly List<Task> tasks = new();
+    private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
 
-    public static void Start()
+    public static Task Start()
     {
         Config.Load();
 
-        AcceptLoop();
+        tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
+        tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
 
+        return Task.WhenAll(tasks);
+    }
+
+    public static void Stop()
+    {
         Log.Info("Exiting...");
+
+        cancellationTokenSource.Cancel();
     }
 
     public static void AddClient(SacredClient client)
@@ -67,21 +75,19 @@ internal static class LobbyServer
         return list!;
     }
 
-    private static void AcceptLoop()
+    private static async void AcceptLoop()
     {
         var listener = new TcpListener(IPAddress.Any, Config.Instance.LobbyPort);
         listener.Start();
 
         Log.Info("Started accepting clients");
 
-        while (true)
+        while (!cancellationTokenSource.IsCancellationRequested)
         {
-            var socket = listener.AcceptSocket();
+            var socket = await listener.AcceptSocketAsync(cancellationTokenSource.Token);
             var connection = new SacredConnection(socket);
             var client = new SacredClient(connection, ++connectionIdCounter);
             client.Start();
         }
     }
-
-
 }
