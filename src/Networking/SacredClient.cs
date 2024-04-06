@@ -92,6 +92,8 @@ public class SacredClient
                 Log.Trace(ex.ToString());
             }
         }
+
+        Stop();
     }
 
     private void WriteLoop()
@@ -113,6 +115,8 @@ public class SacredClient
                 Log.Trace(ex.ToString());
             }
         }
+
+        Stop();
     }
 
     private void DispatchPacket(TincatPacket packet)

@@ -41,6 +41,7 @@ internal static partial class LobbyServer
         clientsLock.EnterWriteLock();
         clients.Remove(client);
         clientsLock.ExitWriteLock();
+        Log.Info($"Client removed {client.GetPrintableName()}");
     }
 
     public static void SendPacketToAllGameClients(TincatPacket packet)
