@@ -1,3 +1,5 @@
+using Sacred.Networking.Types;
+
 namespace Sacred;
 internal static partial class LobbyServer
 {
@@ -7,34 +9,78 @@ internal static partial class LobbyServer
 
         while (!cancellationTokenSource.IsCancellationRequested)
         {
-            var line = Console.ReadLine()!;
-            var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-            switch (tokens[0])
+            try
             {
-                case "help":
-                    Console.WriteLine(
-                        """
+                var line = Console.ReadLine()!;
+                var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                if(tokens.Length == 0)
+                    continue;
+
+                switch (tokens[0])
+                {
+                    case "help":
+                        Console.WriteLine(
+                            """
                         Common commands:
                         help    |   Prints this message
                         stop    |   Stops the LobbyServer
                         list    |   Lists all the clients
+
+                        Debug commands:
+                        dbg_join_room #client #room
+                        dbg_lobby_result #client #type #result
+                        dbg_server_list #client
                         """);
-                break;
+                        break;
 
-                case "stop":
-                    Stop();
-                break;
+                    case "stop":
+                        Stop();
+                        break;
 
-                case "list":
-                    List();
-                break;
-                
-                default:
-                    Console.WriteLine($"Unknown command '{tokens[0]}'");
-                break;
+                    case "list":
+                        List();
+                        break;
+
+                    case "dbg_join_room":
+                        {
+                            if (
+                                int.TryParse(tokens[1], out var client) &&
+                                int.TryParse(tokens[2], out var room)
+                            )
+                            DebugJoinRoom(client, room);
+                        }
+                    break;
+
+                    case "dbg_lobby_result":
+                        {
+                            if (
+                                int.TryParse(tokens[1], out var client) &&
+                                int.TryParse(tokens[2], out var message) &&
+                                int.TryParse(tokens[3], out var result)
+                            )
+                            DebugLobbyResult(client, message, result);
+                        }
+                    break;
+
+                    case "dbg_server_list":
+                        {
+                            if (
+                                int.TryParse(tokens[1], out var client)
+                            )
+                            DebugServerList(client);
+                        }
+                    break;
+
+                    default:
+                        Console.WriteLine($"Unknown command '{tokens[0]}'");
+                        break;
+                }
             }
-
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error executing command: {ex}");
+            }
         }
 
         static void List()
@@ -45,6 +91,27 @@ internal static partial class LobbyServer
             {
                 Console.WriteLine($"{item.GetPrintableName()} {item.ClientType}");
             }
+            clientsLock.ExitReadLock();
+        }
+
+        static void DebugJoinRoom(int client, int room)
+        {
+            clientsLock.EnterReadLock();
+            clients.First(x => x.ConnectionId == client).JoinRoom(room);
+            clientsLock.ExitReadLock();
+        }
+
+        static void DebugLobbyResult(int client, int message, int result)
+        {
+            clientsLock.EnterReadLock();
+            clients.First(x => x.ConnectionId == client).SendLobbyResult((SacredMsgType)message, result);
+            clientsLock.ExitReadLock();
+        }
+
+        static void DebugServerList(int client)
+        {
+            clientsLock.EnterReadLock();
+            clients.First(x => x.ConnectionId == client).SendServerList();
             clientsLock.ExitReadLock();
         }
     }

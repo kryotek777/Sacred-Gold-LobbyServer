@@ -6,7 +6,7 @@ namespace Sacred;
 
 internal static partial class LobbyServer
 {
-    private static readonly ReaderWriterLockSlim clientsLock = new();
+    private static readonly ReaderWriterLockSlim clientsLock = new(LockRecursionPolicy.SupportsRecursion);
     private static readonly List<SacredClient> clients = new();
     private static readonly List<Task> tasks = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();

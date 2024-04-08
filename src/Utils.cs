@@ -1,6 +1,7 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 namespace Sacred;
 
 internal static class Utils
@@ -52,5 +53,20 @@ internal static class Utils
     public static int ToInt(this IPAddress ip)
     {
         return BitConverter.ToInt32(ip.GetAddressBytes());
+    }
+
+    public static void FormatBytes(ReadOnlySpan<byte> data, StringBuilder sb)
+    {
+        const int lineLength = 8;
+        for (int i = 0; i < data.Length;)
+        {
+            var b = data[i];
+            char c = (char)b;
+
+            sb.Append($"{b:X2} [{(char.IsControl(c) ? ' ' : c)}] ");
+
+            if (++i % lineLength == 0)
+                sb.AppendLine();
+        }
     }
 }

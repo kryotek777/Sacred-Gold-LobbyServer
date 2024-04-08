@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text;
 using Sacred.Networking.Types;
 
 namespace Sacred.Networking;
@@ -249,7 +250,8 @@ public class SacredClient
                 OnServerStartInfo(tincatHeader, sacredHeader, sacredPayload);
                 break;
             default:
-                Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1}");
+                Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
+                Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
                 break;
         }
 
@@ -376,18 +378,7 @@ public class SacredClient
         //Rooms aren't implemented yet, but if we force the right answer the client will happily join
         JoinRoom(0);
 
-        var infos = LobbyServer.GetAllServerInfos();
-
-        //Send the server list to the client
-        foreach (var info in infos)
-        {
-            info.Hidden = 0;
-
-            var packet = MakePacket(SacredMsgType.UpdateServerInfo, info.ToArray(), 0x12BBCCDD);
-            packet.Header.Unknown = tincatHeader.Unknown;
-
-            SendPacket(packet);
-        }
+        SendServerList();
     }
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -408,12 +399,27 @@ public class SacredClient
 
     #endregion
 
-    private void JoinRoom(int roomNumber)
+    public void SendServerList()
     {
-        SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
+        var infos = LobbyServer.GetAllServerInfos();
+
+        foreach (var info in infos)
+        {
+            info.Hidden = 0;
+
+            var packet = MakePacket(SacredMsgType.UpdateServerInfo, info.ToArray(), 0x12BBCCDD);
+
+            SendPacket(packet);
+        }
     }
 
-    private void SendLobbyResult(SacredMsgType type, int value = 0)
+    public void JoinRoom(int roomNumber)
+    {
+        SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
+        SendServerList();
+    }
+
+    public void SendLobbyResult(SacredMsgType type, int value = 0)
     {
         var ms = new MemoryStream();
         var response = new BinaryWriter(ms);
@@ -425,5 +431,19 @@ public class SacredClient
 
         //Send an OK
         SendPacket(SacredMsgType.LobbyResult, ms.ToArray());
+    }
+
+    private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("---Tincat Header---");
+        sb.AppendLine(tincatHeader.ToString());
+        sb.AppendLine("---Sacred Header---");
+        sb.AppendLine(sacredHeader.ToString());
+        sb.AppendLine("---Payload Data---");
+        Utils.FormatBytes(payload, sb);
+
+        return sb.ToString();
     }
 }
