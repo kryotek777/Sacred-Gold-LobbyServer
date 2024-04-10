@@ -14,5 +14,14 @@ public enum SacredMsgType : ushort
     UpdateServerInfo = 12,
     LobbyResult = 15,
     AcceptServerLogin = 38,
-    ClientJoinRoom = 26
+    ClientJoinRoom = 26,
+    SendSystemMessage = 31,
+    SendPrivateMessage = 33,
+    OtherClientJoinedLobby = 28,
+    OtherClientLeavedLobby = 29,
+
+    MaybeCustomMessage = 56,
+    MaybeLobbyMessage = 48,
+
+
 }
