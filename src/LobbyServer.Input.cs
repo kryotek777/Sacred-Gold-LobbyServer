@@ -14,7 +14,7 @@ internal static partial class LobbyServer
                 var line = Console.ReadLine()!;
                 var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-                if(tokens.Length == 0)
+                if (tokens.Length == 0)
                     continue;
 
                 switch (tokens[0])
@@ -26,6 +26,7 @@ internal static partial class LobbyServer
                         help    |   Prints this message
                         stop    |   Stops the LobbyServer
                         list    |   Lists all the clients
+                        type    |   Sends a message to clients
 
                         Debug commands:
                         dbg_join_room #client #room
@@ -40,6 +41,10 @@ internal static partial class LobbyServer
 
                     case "list":
                         List();
+                        break;
+
+                    case "type":
+                        BroadcastMessage(line.Substring(5));
                         break;
 
                     case "dbg_join_room":
@@ -90,6 +95,16 @@ internal static partial class LobbyServer
             foreach (var item in clients.OrderBy(x => x.ClientType))
             {
                 Console.WriteLine($"{item.GetPrintableName()} {item.ClientType}");
+            }
+            clientsLock.ExitReadLock();
+        }
+
+        static void BroadcastMessage(string message)
+        {
+            clientsLock.EnterReadLock();
+            foreach (var cl in clients.Where(x => x.ClientType == Networking.ClientType.GameClient))
+            {
+                cl.SendChatMessage("LobbyServer", message, 0, false);
             }
             clientsLock.ExitReadLock();
         }

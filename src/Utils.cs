@@ -69,4 +69,11 @@ internal static class Utils
                 sb.AppendLine();
         }
     }
+
+    public static string FormatBytes(ReadOnlySpan<byte> data)
+    {
+        var sb = new StringBuilder();
+        FormatBytes(data, sb);
+        return sb.ToString();
+    }
 }

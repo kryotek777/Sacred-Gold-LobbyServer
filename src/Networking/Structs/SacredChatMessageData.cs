@@ -1,19 +1,24 @@
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Sacred;
 
-[StructLayout(LayoutKind.Explicit, Size = StructSize)]
-internal unsafe struct SacredChatMessageData
+[StructLayout(LayoutKind.Explicit, Size = DataSize)]
+public unsafe struct SacredChatMessageData
 {
-    public const int StructSize = 344;
+    public const int DataSize = 344;
+
+    [FieldOffset(0)]
+    public fixed byte senderText[80];
+
+    [FieldOffset(80)]
+    public uint senderId;
+
+    [FieldOffset(84)]
+    public int isPrivateMessage;
 
     [FieldOffset(88)]
-    public fixed byte messageBytes[128];
+    public fixed byte messageText[128];
 
-    public string GetMessageString()
-    {
-        fixed(byte* b = messageBytes)
-            return Encoding.ASCII.GetString(b, 128);
-    }
+    [FieldOffset(0)]
+    public fixed byte rawData[DataSize];
 } 

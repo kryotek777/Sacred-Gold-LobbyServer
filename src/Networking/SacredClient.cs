@@ -169,7 +169,7 @@ public class SacredClient
         SendPacket(MakePacket(msgType, payload));
     }
 
-    private void SendPacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
+    public void SendPacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
     {
         SendPacket(MakePacket(msgType, payload));
     }
@@ -221,7 +221,7 @@ public class SacredClient
         var sacredPayload = tincatPayload.AsSpan(SacredHeader.DataSize);
 
         //Reply positively to every packet
-        SendLobbyResult(sacredHeader.Type1);
+        SendLobbyResult(new LobbyResult(LobbyResults.Ok, sacredHeader.Type1));
 
         switch (sacredHeader.Type1)
         {
@@ -301,7 +301,7 @@ public class SacredClient
 
     private void OnTincatStayingAlive(TincatPacket packet)
     {
-        Log.Error($"Unimplemented function {nameof(OnTincatStayingAlive)}");
+        
     }
 
     #endregion
@@ -351,9 +351,15 @@ public class SacredClient
         //Assign a ServerId
         ServerInfo.ServerId = ConnectionId;
 
-        //Done
+        //Accept the login
         SendPacket(SacredMsgType.AcceptServerLogin, externalIP.GetAddressBytes());
 
+        //Broadcast the new server to all clients
+        ServerInfo.Hidden = 0;
+        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.ToArray());
+        LobbyServer.SendPacketToAllGameClients(packet);
+
+        //Done
         Log.Info($"{GetPrintableName()} connected as a GameServer with name '{ServerInfo.Name}'");
         Log.Trace(ServerInfo.ToString());
     }
@@ -378,11 +384,17 @@ public class SacredClient
         //Rooms aren't implemented yet, but if we force the right answer the client will happily join
         JoinRoom(0);
 
+        //Update the client's server list
         SendServerList();
+
+        SendChatMessage(string.Empty, "\nUnofficial LobbyServer reimplementation by Kryotek\n", senderId: 0, isPrivate: false);
+        SendChatMessage(string.Empty, "Rooms aren't fully implemented yet, join a server to meet other people!\n", senderId: 0, isPrivate: false);
+        SendChatMessage(string.Empty, "Source code: https://github.com/kryotek777/Sacred-Gold-LobbyServer/tree/main\n", senderId: 0, isPrivate: false);
     }
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
-        Log.Error($"Unimplemented function {nameof(OnClientChatMessage)}");
+        var msg = new SacredChatMessage(payload);
+        Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
     }
     private void OnAcceptClientLogin(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -398,6 +410,13 @@ public class SacredClient
     }
 
     #endregion
+
+    public void SendChatMessage(string from, string message, uint senderId, bool isPrivate) => SendChatMessage(new SacredChatMessage(from, message, senderId, isPrivate));
+
+    public void SendChatMessage(SacredChatMessage message)
+    {
+        SendPacket(SacredMsgType.SendSystemMessage, message.ToArray());
+    }
 
     public void SendServerList()
     {
@@ -419,18 +438,9 @@ public class SacredClient
         SendServerList();
     }
 
-    public void SendLobbyResult(SacredMsgType type, int value = 0)
+    public void SendLobbyResult(LobbyResult result)
     {
-        var ms = new MemoryStream();
-        var response = new BinaryWriter(ms);
-
-        //LobbyResult
-        response.Write(value);
-        //Message type we're answering to
-        response.Write((int)type);
-
-        //Send an OK
-        SendPacket(SacredMsgType.LobbyResult, ms.ToArray());
+        SendPacket(SacredMsgType.LobbyResult, result.ToArray());
     }
 
     private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
