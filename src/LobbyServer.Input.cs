@@ -119,7 +119,7 @@ internal static partial class LobbyServer
         static void DebugLobbyResult(int client, int message, int result)
         {
             clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client).SendLobbyResult((SacredMsgType)message, result);
+            clients.First(x => x.ConnectionId == client).SendLobbyResult(new LobbyResult((LobbyResults)result, (SacredMsgType)message));
             clientsLock.ExitReadLock();
         }
 
