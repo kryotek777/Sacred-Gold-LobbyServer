@@ -390,6 +390,12 @@ public class SacredClient
         //Update the client's server list
         SendServerList();
 
+        LobbyServer.ForEachClient(x =>
+        {
+            if(x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
+                x.UserJoinedRoom(ConnectionId, clientName);
+        });
+
         SendChatMessage(string.Empty, "\nUnofficial LobbyServer reimplementation by Kryotek\n", senderId: 0, isPrivate: false);
         SendChatMessage(string.Empty, "Rooms aren't fully implemented yet, join a server to meet other people!\n", senderId: 0, isPrivate: false);
         SendChatMessage(string.Empty, "Source code: https://github.com/kryotek777/Sacred-Gold-LobbyServer/tree/main\n", senderId: 0, isPrivate: false);
@@ -448,6 +454,28 @@ public class SacredClient
     public void SendLobbyResult(LobbyResult result)
     {
         SendPacket(SacredMsgType.LobbyResult, result.ToArray());
+    }
+
+    public void UserJoinedRoom(uint connId, string name)
+    {
+        var ms = new MemoryStream();
+        var w = new BinaryWriter(ms);
+
+        w.Write(connId);
+        w.Write(Encoding.ASCII.GetBytes(name));
+        w.Write((byte)0);
+
+        SendPacket(SacredMsgType.OtherClientJoinedLobby, ms.ToArray());
+    }
+
+    public void UserLeavedRoom(uint connId)
+    {
+        var ms = new MemoryStream();
+        var w = new BinaryWriter(ms);
+
+        w.Write(connId);
+
+        SendPacket(SacredMsgType.OtherClientLeavedLobby, ms.ToArray());
     }
 
     private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)

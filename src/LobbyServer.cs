@@ -64,6 +64,15 @@ internal static partial class LobbyServer
         clientsLock.ExitReadLock();
     }
 
+    public static void ForEachClient(Action<SacredClient> action)
+    {
+        clientsLock.EnterReadLock();
+        foreach (var client in clients)
+        {
+            action(client);
+        }
+        clientsLock.ExitReadLock();    }
+
     public static List<ServerInfo> GetAllServerInfos()
     {
         clientsLock.EnterReadLock();
