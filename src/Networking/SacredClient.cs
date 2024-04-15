@@ -11,6 +11,7 @@ public class SacredClient
     public uint ConnectionId { get; private set; }
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfo? ServerInfo { get; private set; }
+    public string? clientName { get; private set; }
 
     private SacredConnection connection;
     private CancellationTokenSource cancellationTokenSource;
@@ -311,6 +312,8 @@ public class SacredClient
     private void OnClientLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
         ClientType = ClientType.GameClient;
+
+        clientName = Encoding.ASCII.GetString(payload.Slice(0, 32).SliceNullTerminated());
 
         var ms = new MemoryStream();
         var response = new BinaryWriter(ms);
