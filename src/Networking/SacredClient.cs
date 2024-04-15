@@ -12,6 +12,7 @@ public class SacredClient
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfo? ServerInfo { get; private set; }
     public string? clientName { get; private set; }
+    public bool hasSelectedCharacter = false;
 
     private SacredConnection connection;
     private CancellationTokenSource cancellationTokenSource;
@@ -396,15 +397,20 @@ public class SacredClient
         //Update the client's server list
         SendServerList();
 
-        LobbyServer.ForEachClient(x =>
-        {
-            if(x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
-                x.UserJoinedRoom(ConnectionId, clientName);
-        });
-
         SendChatMessage(string.Empty, "\nUnofficial LobbyServer reimplementation by Kryotek\n", senderId: 0, isPrivate: false);
         SendChatMessage(string.Empty, "Rooms aren't fully implemented yet, join a server to meet other people!\n", senderId: 0, isPrivate: false);
         SendChatMessage(string.Empty, "Source code: https://github.com/kryotek777/Sacred-Gold-LobbyServer/tree/main\n", senderId: 0, isPrivate: false);
+
+        hasSelectedCharacter = true;
+
+        LobbyServer.ForEachClient(x =>
+        {
+            if(x.ClientType == ClientType.GameClient && x.hasSelectedCharacter && x.ConnectionId != ConnectionId)
+            {
+                x.UserJoinedRoom(ConnectionId, clientName);
+                UserJoinedRoom(x.ConnectionId, x.clientName);
+            }
+        });
     }
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
