@@ -397,6 +397,10 @@ public class SacredClient
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
         var msg = new SacredChatMessage(payload);
+        var newMsg = new SacredChatMessage(clientName ?? "<unknown>", msg.Message, ConnectionId, msg.IsPrivate);
+
+        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendSystemMessage, newMsg.ToArray()));
+
         Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
     }
     private void OnAcceptClientLogin(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
