@@ -53,6 +53,12 @@ public class SacredClient
 
     public void Stop()
     {
+        LobbyServer.ForEachClient(x =>
+        {
+            if(x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
+                x.UserLeavedRoom(ConnectionId);
+        });
+
         cancellationTokenSource.Cancel();
 
         LobbyServer.RemoveClient(this);
