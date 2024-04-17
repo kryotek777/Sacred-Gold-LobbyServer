@@ -4,6 +4,7 @@ public enum SacredMsgType : ushort
 {
     //Incoming
     ClientLoginRequest = 2,
+    ReceivePublicData = 10,
     ServerLoginRequest = 12,
     ServerChangePublicInfo = 13,
     ClientCharacterSelect = 17,
@@ -11,6 +12,7 @@ public enum SacredMsgType : ushort
 
     //Outgoing
     AcceptClientLogin = 16,
+    SendPublicData = 11,
     UpdateServerInfo = 12,
     LobbyResult = 15,
     AcceptServerLogin = 38,

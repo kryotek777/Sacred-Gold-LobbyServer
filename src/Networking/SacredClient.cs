@@ -13,13 +13,14 @@ public class SacredClient
     public ServerInfo? ServerInfo { get; private set; }
     public string? clientName { get; private set; }
     public bool hasSelectedCharacter = false;
+    public byte[] publicData { get; private set; }
 
     private SacredConnection connection;
     private CancellationTokenSource cancellationTokenSource;
     private Task? readTask;
     private Task? writeTask;
     private BlockingCollection<TincatPacket> sendQueue;
-    
+
     public SacredClient(SacredConnection connection, uint connectionId)
     {
         ArgumentNullException.ThrowIfNull(connection);
@@ -56,7 +57,7 @@ public class SacredClient
     {
         LobbyServer.ForEachClient(x =>
         {
-            if(x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
+            if (x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
                 x.UserLeavedRoom(ConnectionId);
         });
 
@@ -257,13 +258,16 @@ public class SacredClient
             case SacredMsgType.AcceptServerLogin:
                 OnServerStartInfo(tincatHeader, sacredHeader, sacredPayload);
                 break;
+            case SacredMsgType.ReceivePublicData:
+                OnReceivePublicData(tincatHeader, sacredHeader, sacredPayload);
+                break;
             default:
                 Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
                 Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
                 break;
         }
 
-        
+
     }
 
     private void OnTincatLogMeOn(TincatPacket packet)
@@ -309,7 +313,7 @@ public class SacredClient
 
     private void OnTincatStayingAlive(TincatPacket packet)
     {
-        
+
     }
 
     #endregion
@@ -386,7 +390,7 @@ public class SacredClient
 
         var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.ToArray());
         LobbyServer.SendPacketToAllGameClients(packet);
-        
+
     }
     private void OnClientCharacterSelect(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -405,13 +409,23 @@ public class SacredClient
 
         LobbyServer.ForEachClient(x =>
         {
-            if(x.ClientType == ClientType.GameClient && x.hasSelectedCharacter && x.ConnectionId != ConnectionId)
+            if (x.ClientType == ClientType.GameClient && x.hasSelectedCharacter && x.ConnectionId != ConnectionId)
             {
                 x.UserJoinedRoom(ConnectionId, clientName);
                 UserJoinedRoom(x.ConnectionId, x.clientName);
+
+                x.SendPublicData(publicData);
+                SendPublicData(x.publicData);
             }
         });
     }
+
+    private void OnReceivePublicData(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        publicData = payload.ToArray();
+    }
+
+
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
         var msg = new SacredChatMessage(payload);
@@ -466,6 +480,22 @@ public class SacredClient
     public void SendLobbyResult(LobbyResult result)
     {
         SendPacket(SacredMsgType.LobbyResult, result.ToArray());
+    }
+
+    public void SendPublicData(ReadOnlySpan<byte> data)
+    {
+        //Calculate uncompressed data size
+        //var compressedData = data.Slice(22);
+        //var zlibStream = new ZLibStream(new MemoryStream(compressedData.ToArray()), CompressionMode.Decompress);
+        //var uncompressedData = new MemoryStream();
+        //zlibStream.CopyTo(uncompressedData);
+        //var dataSize = uncompressedData.Length;
+
+        //Modify the length of the payload
+        var payload = data.ToArray();
+        payload[15] = 2;
+
+        SendPacket(SacredMsgType.SendPublicData, payload);
     }
 
     public void UserJoinedRoom(uint connId, string name)
