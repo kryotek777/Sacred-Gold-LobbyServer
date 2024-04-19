@@ -19,7 +19,7 @@ public class SacredChatMessage
                 fixed (byte* p = Data.senderText)
                 {
                     var span = new ReadOnlySpan<byte>(p, 90);
-                    return Encoding.ASCII.GetString(span.SliceNullTerminated());
+                    return Utils.Win1252ToString(span);
                 }
             }
         }
@@ -31,10 +31,7 @@ public class SacredChatMessage
                 fixed (byte* p = Data.senderText)
                 {
                     var span = new Span<byte>(p, 90);
-                    var bytes = Encoding.ASCII.GetBytes(value, span);
-
-                    if (bytes < span.Length)
-                        span.Slice(bytes).Clear();
+                    Utils.StringToWin1252(value, span);
                 }
             }
         }
@@ -61,7 +58,7 @@ public class SacredChatMessage
                 fixed (byte* p = Data.messageText)
                 {
                     var span = new ReadOnlySpan<byte>(p, 128);
-                    return Encoding.ASCII.GetString(span.SliceNullTerminated());
+                    return Utils.Win1252ToString(span);
                 }
             }
         }
@@ -73,10 +70,7 @@ public class SacredChatMessage
                 fixed (byte* p = Data.messageText)
                 {
                     var span = new Span<byte>(p, 128);
-                    var bytes = Encoding.ASCII.GetBytes(value, span);
-
-                    if (bytes < span.Length)
-                        span.Slice(bytes).Clear();
+                    Utils.Win1252ToString(span);
                 }
             }
         }

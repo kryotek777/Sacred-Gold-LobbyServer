@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using Sacred.Networking;
 using Sacred.Networking.Types;
 namespace Sacred;
@@ -15,6 +16,8 @@ internal static partial class LobbyServer
     public static Task Start()
     {
         Config.Load();
+
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));

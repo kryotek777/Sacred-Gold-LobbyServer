@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sacred.Networking.Types;
 
@@ -324,7 +325,7 @@ public class SacredClient
     {
         ClientType = ClientType.GameClient;
 
-        clientName = Encoding.ASCII.GetString(payload.Slice(0, 32).SliceNullTerminated());
+        clientName = Utils.Win1252ToString(payload.Slice(0, 32));
 
         var ms = new MemoryStream();
         var response = new BinaryWriter(ms);
@@ -402,8 +403,7 @@ public class SacredClient
         SendServerList();
 
         SendChatMessage(string.Empty, "\nUnofficial LobbyServer reimplementation by Kryotek\n", senderId: 0, isPrivate: false);
-        SendChatMessage(string.Empty, "Rooms aren't fully implemented yet, join a server to meet other people!\n", senderId: 0, isPrivate: false);
-        SendChatMessage(string.Empty, "Source code: https://github.com/kryotek777/Sacred-Gold-LobbyServer/tree/main\n", senderId: 0, isPrivate: false);
+        SendChatMessage(string.Empty, "Source: https://github.com/kryotek777/Sacred-Gold-LobbyServer\n", senderId: 0, isPrivate: false);
 
         hasSelectedCharacter = true;
 
@@ -428,6 +428,12 @@ public class SacredClient
 
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
+        unsafe
+        {
+            var data = MemoryMarshal.Read<SacredChatMessageData>(payload);
+            var span = new ReadOnlySpan<byte>(data.messageText, 128);
+        }
+
         var msg = new SacredChatMessage(payload);
         var newMsg = new SacredChatMessage(clientName ?? "<unknown>", msg.Message, ConnectionId, msg.IsPrivate);
 
@@ -504,7 +510,7 @@ public class SacredClient
         var w = new BinaryWriter(ms);
 
         w.Write(connId);
-        w.Write(Encoding.ASCII.GetBytes(name));
+        w.Write(Utils.Windows1252Encoding.GetBytes(name));
         w.Write((byte)0);
 
         SendPacket(SacredMsgType.OtherClientJoinedLobby, ms.ToArray());

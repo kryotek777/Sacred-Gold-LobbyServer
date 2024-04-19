@@ -19,7 +19,7 @@ public class ServerInfo
                 fixed (byte* p = Data.name)
                 {
                     var span = new ReadOnlySpan<byte>(p, 24);
-                    return Encoding.ASCII.GetString(span.SliceNullTerminated());
+                    return Utils.Win1252ToString(span);
                 }
             }
         }
@@ -31,10 +31,7 @@ public class ServerInfo
                 fixed (byte* p = Data.name)
                 {
                     var span = new Span<byte>(p, 24);
-                    var bytes = Encoding.ASCII.GetBytes(value, span);
-
-                    if (bytes < span.Length)
-                        span.Slice(bytes).Clear();
+                    Utils.StringToWin1252(value, span);
                 }
             }
         }

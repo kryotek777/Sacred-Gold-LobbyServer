@@ -6,6 +6,8 @@ namespace Sacred;
 
 internal static class Utils
 {
+    public static readonly Encoding Windows1252Encoding = Encoding.GetEncoding(1252);
+
     public static Task RunTask(Action action, CancellationToken cancellationToken)
     {
         return Task.Factory.StartNew(
@@ -75,5 +77,12 @@ internal static class Utils
         var sb = new StringBuilder();
         FormatBytes(data, sb);
         return sb.ToString();
+    }
+
+    public static string Win1252ToString(ReadOnlySpan<byte> span) => Windows1252Encoding.GetString(span.SliceNullTerminated());
+    public static void StringToWin1252(string str, Span<byte> span)
+    {
+        int bytesWritten = Windows1252Encoding.GetBytes(str, span);
+        span.Slice(bytesWritten).Clear();
     }
 }

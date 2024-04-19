@@ -33,7 +33,7 @@ public class LogOn
                 fixed (byte* p = Data.user)
                 {
                     var span = new ReadOnlySpan<byte>(p, 32);
-                    return Encoding.ASCII.GetString(span.SliceNullTerminated());
+                    return Utils.Win1252ToString(span);
                 }
             }
         }
@@ -45,10 +45,7 @@ public class LogOn
                 fixed (byte* p = Data.user)
                 {
                     var span = new Span<byte>(p, 32);
-                    var bytes = Encoding.ASCII.GetBytes(value, span);
-
-                    if (bytes < span.Length)
-                        span.Slice(bytes).Clear();
+                    Utils.StringToWin1252(value, span);
                 }
             }
         }
@@ -63,7 +60,7 @@ public class LogOn
                 fixed (byte* p = Data.password)
                 {
                     var span = new ReadOnlySpan<byte>(p, 8);
-                    return Encoding.ASCII.GetString(span.SliceNullTerminated());
+                    Utils.Win1252ToString(span);
                 }
             }
         }
@@ -75,10 +72,7 @@ public class LogOn
                 fixed (byte* p = Data.password)
                 {
                     var span = new Span<byte>(p, 8);
-                    var bytes = Encoding.ASCII.GetBytes(value, span);
-
-                    if (bytes < span.Length)
-                        span.Slice(bytes).Clear();
+                    Utils.StringToWin1252(value, span);
                 }
             }
         }
