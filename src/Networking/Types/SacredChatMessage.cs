@@ -70,7 +70,7 @@ public class SacredChatMessage
                 fixed (byte* p = Data.messageText)
                 {
                     var span = new Span<byte>(p, 128);
-                    Utils.Win1252ToString(span);
+                    Utils.StringToWin1252(value, span);
                 }
             }
         }
