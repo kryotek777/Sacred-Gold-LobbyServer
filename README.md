@@ -14,11 +14,10 @@ This reimplementation aims to recreate the functionality of the original lobby s
 - **Login**: The servers once required registration on the ascaron website, here any username and password combination will do.
 - **Open Net**: This gamemode allows you to use your local characters to play online!
 - **Server List**: GameServers can connect to the lobbyserver and be added to the list of available servers
+- **Lobby Chat**: You can now chat with other players and see other characters in the lobby
 
 ### Not implemented
-- **Lobby Chat**: You can still chat while in game! But you still cannot chat in the lobby.
 - **Closed Net**: In this gamemode the lobbyserver stores your characters so you can't load cheated ones.
-- **Hosting a GameServer from the lobby's UI**: This will lock your game! Always use GameServer.exe
 
 ## Getting Started
 
