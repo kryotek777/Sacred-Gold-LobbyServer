@@ -60,7 +60,7 @@ public class LogOn
                 fixed (byte* p = Data.password)
                 {
                     var span = new ReadOnlySpan<byte>(p, 8);
-                    Utils.Win1252ToString(span);
+                    return Utils.Win1252ToString(span);
                 }
             }
         }
