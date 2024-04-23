@@ -3,7 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace Sacred;
 
-internal record Config(int LobbyPort = 7066, LogSeverity LogLevel = LogSeverity.Trace)
+internal record Config(
+    int LobbyPort = 7066, 
+    LogSeverity LogLevel = LogSeverity.Trace, 
+    string[]? MOTD = null)
 {
     private const string configName = "config.json";
 

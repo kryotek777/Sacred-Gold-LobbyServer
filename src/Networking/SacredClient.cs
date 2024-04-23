@@ -402,8 +402,8 @@ public class SacredClient
         //Update the client's server list
         SendServerList();
 
-        SendChatMessage(string.Empty, "\nUnofficial LobbyServer reimplementation by Kryotek\n", senderId: 0, isPrivate: false);
-        SendChatMessage(string.Empty, "Source: https://github.com/kryotek777/Sacred-Gold-LobbyServer\n", senderId: 0, isPrivate: false);
+        //Send the MOTD
+        SendMotd();
 
         hasSelectedCharacter = true;
 
@@ -524,6 +524,27 @@ public class SacredClient
         w.Write(connId);
 
         SendPacket(SacredMsgType.OtherClientLeavedLobby, ms.ToArray());
+    }
+
+    private void SendMotd()
+    {
+        var motd = Config.Instance.MOTD;
+
+        if (motd == null)
+            return;
+
+        foreach (var line in motd)
+        {
+            if (line == null)
+                continue;
+
+            SendChatMessage(
+                from: string.Empty, //Red Text
+                message: line,      //MOTD line
+                senderId: 0,        //From System
+                isPrivate: false    //Not a DM from another player
+            );
+        }
     }
 
     private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
