@@ -6,7 +6,14 @@ namespace Sacred;
 
 internal static class Utils
 {
-    public static readonly Encoding Windows1252Encoding = Encoding.GetEncoding(1252);
+    public static readonly Encoding Windows1252Encoding;
+
+    static Utils()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        Windows1252Encoding = Encoding.GetEncoding(1252);
+    }
 
     public static Task RunTask(Action action, CancellationToken cancellationToken)
     {

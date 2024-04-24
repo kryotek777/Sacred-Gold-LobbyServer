@@ -17,8 +17,6 @@ internal static partial class LobbyServer
     {
         Config.Load();
 
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
 
