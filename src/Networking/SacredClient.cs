@@ -480,7 +480,6 @@ public class SacredClient
     public void JoinRoom(int roomNumber)
     {
         SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
-        SendServerList();
     }
 
     public void SendLobbyResult(LobbyResult result)
