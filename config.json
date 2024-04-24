@@ -4,5 +4,17 @@
     "MOTD": [
         "\nUnofficial LobbyServer reimplementation by \\cFF00FFFFKryotek",
         "\nSource: \\cFFAA55FFhttps://github.com/kryotek777/Sacred-Gold-LobbyServer\n"
+    ],
+    "FakeServers": [
+        {
+            "Name" : "###Server Group 1###",
+            "Flags": 255,
+            "ServerId": 100000
+        },
+        {
+            "Name" : "###Server Group 2###",
+            "Flags": 255,
+            "ServerId": 200000
+        }
     ]
 }

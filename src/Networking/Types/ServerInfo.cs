@@ -85,6 +85,10 @@ public class ServerInfo
         set => Data.hidden = value;
     }
 
+    public ServerInfo()
+    {
+        Data = default;
+    }
 
     public ServerInfo(in ServerInfoData data)
     {

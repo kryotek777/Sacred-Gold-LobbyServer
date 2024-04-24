@@ -77,13 +77,19 @@ internal static partial class LobbyServer
     public static List<ServerInfo> GetAllServerInfos()
     {
         clientsLock.EnterReadLock();
-        var list = clients
+
+        var fakeServers = Config.Instance.FakeServers ?? Enumerable.Empty<ServerInfo>();
+
+        var serverList = clients
             .Where(x => x.ClientType == ClientType.GameServer && x.ServerInfo != null)
             .Select(x => x.ServerInfo)
+            .Concat(fakeServers)
+            .Where(x => x != null)
             .ToList();
+
         clientsLock.ExitReadLock();
 
-        return list!;
+        return serverList!;
     }
 
     private static async void AcceptLoop()

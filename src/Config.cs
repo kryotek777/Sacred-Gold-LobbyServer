@@ -1,12 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Sacred.Networking.Types;
 
 namespace Sacred;
 
 internal record Config(
     int LobbyPort = 7066, 
     LogSeverity LogLevel = LogSeverity.Trace, 
-    string[]? MOTD = null)
+    string[]? MOTD = null,
+    ServerInfo[]? FakeServers = null)
 {
     private const string configName = "config.json";
 
