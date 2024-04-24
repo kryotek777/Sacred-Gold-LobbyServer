@@ -1,6 +1,7 @@
 {
     "LobbyPort": 7066,
     "LogLevel": "Info",
+    "LogPath": "log.txt",
     "MOTD": [
         "\nUnofficial LobbyServer reimplementation by \\cFF00FFFFKryotek",
         "\nSource: \\cFFAA55FFhttps://github.com/kryotek777/Sacred-Gold-LobbyServer\n"

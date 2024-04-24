@@ -17,6 +17,8 @@ internal static partial class LobbyServer
     {
         Config.Load();
 
+        Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
+
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
 

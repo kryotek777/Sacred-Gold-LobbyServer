@@ -7,6 +7,7 @@ namespace Sacred;
 internal record Config(
     int LobbyPort = 7066, 
     LogSeverity LogLevel = LogSeverity.Trace, 
+    string LogPath = "log.txt",
     string[]? MOTD = null,
     ServerInfo[]? FakeServers = null)
 {
@@ -25,8 +26,6 @@ internal record Config(
                 Converters = { new JsonStringEnumConverter() }
             })!;
         }
-
-        Log.LogLevel = Instance.LogLevel;
 
         if(!exists)
             Log.Warning($"The config file '{configName}' does not exist. Using default values.");

@@ -4,10 +4,29 @@ internal static class Log
 {
     private static object writeLock = new();
 
+    private static StreamWriter? logFile;
+
     /// <summary>
     /// The minimum logging level needed to actually write the message, anything lower than this value won't be written.
     /// </summary>
     public static LogSeverity LogLevel { get; set; } = LogSeverity.Trace;
+
+    public static void Initialize(LogSeverity logLevel, string? logPath)
+    {
+        LogLevel = logLevel;
+
+        if(logPath != null)
+        {
+            try
+            {
+                logFile = new StreamWriter(File.Open(logPath, FileMode.OpenOrCreate));
+            }
+            catch(Exception ex)
+            {
+                Error($"Error opening log file at path '{logPath}': {ex.Message}");
+            }
+        }
+    }
 
     private static void Write(LogSeverity severity, string msg)
     {
@@ -18,9 +37,14 @@ internal static class Log
             // However, we still need to lock to prevent colors from changing out of order
             lock (writeLock)
             {
+                string line = $"[{DateTime.Now:u}] [{severity}] {msg}";
+
                 Console.ForegroundColor = GetSeverityColor(severity);
-                Console.WriteLine($"[{DateTime.Now:u}] [{severity}] {msg}");
+                Console.WriteLine(line);
                 Console.ResetColor();
+
+                logFile?.WriteLine(line);
+                logFile?.Flush();
             }
         }
     }
