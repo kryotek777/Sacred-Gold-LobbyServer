@@ -8,7 +8,7 @@ public unsafe struct ServerInfoData
     public const int DataSize = 0x74;
 
     [FieldOffset(0)]
-    public fixed byte name[24];
+    public fixed byte name[80];
     [FieldOffset(84)]
     public int ipAddress;
     [FieldOffset(88)]

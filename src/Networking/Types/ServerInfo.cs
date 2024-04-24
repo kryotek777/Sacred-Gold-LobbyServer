@@ -18,7 +18,7 @@ public class ServerInfo
             {
                 fixed (byte* p = Data.name)
                 {
-                    var span = new ReadOnlySpan<byte>(p, 24);
+                    var span = new ReadOnlySpan<byte>(p, 80);
                     return Utils.Win1252ToString(span);
                 }
             }
@@ -30,7 +30,7 @@ public class ServerInfo
             {
                 fixed (byte* p = Data.name)
                 {
-                    var span = new Span<byte>(p, 24);
+                    var span = new Span<byte>(p, 80);
                     Utils.StringToWin1252(value, span);
                 }
             }
