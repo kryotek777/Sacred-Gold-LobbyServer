@@ -21,6 +21,7 @@ public enum SacredMsgType : ushort
     SendPrivateMessage = 33,
     OtherClientJoinedLobby = 28,
     OtherClientLeavedLobby = 29,
+    Kick = 34,
 
     MaybeCustomMessage = 56,
     MaybeLobbyMessage = 48,

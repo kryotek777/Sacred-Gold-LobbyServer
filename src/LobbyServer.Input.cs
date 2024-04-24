@@ -23,10 +23,11 @@ internal static partial class LobbyServer
                         Console.WriteLine(
                             """
                         Common commands:
-                        help    |   Prints this message
-                        stop    |   Stops the LobbyServer
-                        list    |   Lists all the clients
-                        type    |   Sends a message to clients
+                        help                        |   Prints this message
+                        stop                        |   Stops the LobbyServer
+                        list                        |   Lists all the clients
+                        type                        |   Sends a message to clients
+                        kick <client>               |   Kicks a client
 
                         Debug commands:
                         dbg_join_room #client #room
@@ -46,6 +47,13 @@ internal static partial class LobbyServer
                     case "type":
                         BroadcastMessage(line.Substring(5));
                         break;
+
+                    case "kick":
+                    {
+                        if (int.TryParse(tokens[1], out var client))
+                            Kick(client);
+                    }
+                    break;
 
                     case "dbg_join_room":
                         {
@@ -97,6 +105,13 @@ internal static partial class LobbyServer
                 Console.WriteLine($"{item.GetPrintableName()} {item.ClientType}");
             }
             clientsLock.ExitReadLock();
+        }
+
+        static void Kick(int client)
+        {
+            clientsLock.EnterReadLock();
+            clients.First(x => x.ConnectionId == client)?.Kick();
+            clientsLock.ExitReadLock();        
         }
 
         static void BroadcastMessage(string message)

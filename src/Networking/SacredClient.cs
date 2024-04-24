@@ -537,6 +537,11 @@ public class SacredClient
         SendPacket(SacredMsgType.OtherClientLeavedLobby, ms.ToArray());
     }
 
+    public void Kick()
+    {
+        SendPacket(SacredMsgType.Kick, ReadOnlySpan<byte>.Empty);
+    }
+
     private void SendMotd()
     {
         var motd = Config.Instance.MOTD;
