@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using Sacred.Networking;
 using Sacred.Networking.Types;
 namespace Sacred;
@@ -13,11 +12,17 @@ internal static partial class LobbyServer
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
 
+    public static BanList? BanList { get; private set; }
+    
     public static Task Start()
     {
         Config.Load();
 
         Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
+
+        var bannedClients = Config.Instance.BannedClients;
+        if(bannedClients != null)
+            BanList = new(bannedClients);
 
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
@@ -74,7 +79,8 @@ internal static partial class LobbyServer
         {
             action(client);
         }
-        clientsLock.ExitReadLock();    }
+        clientsLock.ExitReadLock();
+    }
 
     public static List<ServerInfo> GetAllServerInfos()
     {
@@ -104,9 +110,19 @@ internal static partial class LobbyServer
         while (!cancellationTokenSource.IsCancellationRequested)
         {
             var socket = await listener.AcceptSocketAsync(cancellationTokenSource.Token);
-            var connection = new SacredConnection(socket);
-            var client = new SacredClient(connection, ++connectionIdCounter);
-            client.Start();
+            var remoteIp = (socket.RemoteEndPoint as IPEndPoint)!.Address;
+
+            if (BanList?.IsBanned(remoteIp, BanType.Full) == true)
+            {
+                socket.Close();
+                socket.Dispose();
+            }
+            else
+            {
+                var connection = new SacredConnection(socket);
+                var client = new SacredClient(connection, ++connectionIdCounter);
+                client.Start();
+            }
         }
     }
 }

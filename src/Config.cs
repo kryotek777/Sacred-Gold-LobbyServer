@@ -9,7 +9,8 @@ internal record Config(
     LogSeverity LogLevel = LogSeverity.Trace, 
     string LogPath = "log.txt",
     string[]? MOTD = null,
-    ServerInfo[]? FakeServers = null)
+    ServerInfo[]? FakeServers = null,
+    Ban[]? BannedClients = null)
 {
     private const string configName = "config.json";
 

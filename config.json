@@ -17,5 +17,19 @@
             "Flags": 255,
             "ServerId": 200000
         }
+    ],
+    "BannedClients": [
+        {
+            "Ip": "255.255.255.255",
+            "Type": "Full"
+        },
+        {
+            "Ip": "255.255.255.255",
+            "Type": "ClientOnly"
+        },
+        {
+            "Ip": "255.255.255.255",
+            "Type": "ServerOnly"
+        }
     ]
 }

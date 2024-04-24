@@ -323,6 +323,13 @@ public class SacredClient
 
     private void OnClientLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
+        if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
+        {
+            Stop();
+            return;
+        }   
+
+
         ClientType = ClientType.GameClient;
 
         clientName = Utils.Win1252ToString(payload.Slice(0, 32));
@@ -343,6 +350,11 @@ public class SacredClient
 
     private void OnServerLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
+        if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
+        {
+            Stop();
+            return;
+        }  
         //We now know that a GameServer is connecting
         ClientType = ClientType.GameServer;
 
