@@ -12,7 +12,7 @@ public class LobbyResult
     public LobbyResults Result
     {
         get => (LobbyResults)Data.result;
-        set => Data.last = (int)value;
+        set => Data.result = (int)value;
     }
 
     public SacredMsgType Last
