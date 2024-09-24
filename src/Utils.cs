@@ -34,7 +34,11 @@ internal static class Utils
 
     public static ReadOnlySpan<byte> SliceNullTerminated(this ReadOnlySpan<byte> span)
     {
-        return span.Slice(0, span.IndexOf((byte)0));
+        var index = span.IndexOf((byte)0);
+        //Keep the original span if no null terminator exists
+        var result = index == -1 ? span : span.Slice(0, index);
+
+        return result;
     }
 
     public static IPAddress GetExternalIp()
