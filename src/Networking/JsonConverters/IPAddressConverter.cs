@@ -6,8 +6,8 @@ public class IPAddressConverter : JsonConverter<IPAddress>
 {
     public override IPAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        string ipAddressString = reader.GetString();
-        return IPAddress.Parse(ipAddressString);
+        string? ipAddressString = reader.GetString();
+        return ipAddressString == null ? IPAddress.None : IPAddress.Parse(ipAddressString);
     }
 
     public override void Write(Utf8JsonWriter writer, IPAddress value, JsonSerializerOptions options)
