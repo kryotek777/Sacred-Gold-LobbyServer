@@ -13,10 +13,11 @@ public enum SacredMsgType : ushort
     //Outgoing
     ClientLoginResult = 16,
     SendPublicData = 11,
-    UpdateServerInfo = 12,
+    UpdateServerInfo = 21,
     LobbyResult = 15,
     AcceptServerLogin = 38,
     ClientJoinRoom = 26,
+    RequestChannelList = 23,
     SendSystemMessage = 31,
     SendPrivateMessage = 33,
     OtherClientJoinedLobby = 28,
