@@ -197,13 +197,13 @@ public class SacredClient
         return new TincatPacket(header, payload.ToArray());
     }
 
-    private TincatPacket MakePacket(SacredMsgType msgType, ReadOnlySpan<byte> payload, uint unknown1 = 0xDDCCBB00)
+    private TincatPacket MakePacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
     {
         Span<byte> sacredData = stackalloc byte[SacredHeader.DataSize + payload.Length];
 
         //FIXME: Explain this stuff...
         var sacredHeader = new SacredHeader(msgType, payload.Length + SacredHeader.DataSize - 4);
-        sacredHeader.Unknown1 = unknown1;
+        sacredHeader.Unknown1 = 0xDDCCBB00 + (uint)msgType;
 
         var headerData = sacredHeader.ToArray();
 
@@ -482,10 +482,8 @@ public class SacredClient
         foreach (var info in infos)
         {
             info.Hidden = 0;
-
-            var packet = MakePacket(SacredMsgType.UpdateServerInfo, info.ToArray(), 0x12BBCCDD);
-
-            SendPacket(packet);
+            
+            SendPacket(SacredMsgType.UpdateServerInfo, info.ToArray());
         }
     }
 
