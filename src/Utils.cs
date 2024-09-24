@@ -1,5 +1,4 @@
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 namespace Sacred;
@@ -7,6 +6,7 @@ namespace Sacred;
 internal static class Utils
 {
     public static readonly Encoding Windows1252Encoding;
+    private const string EncryptionKey = "Sacred";
 
     static Utils()
     {
@@ -95,5 +95,32 @@ internal static class Utils
     {
         int bytesWritten = Windows1252Encoding.GetBytes(str, span);
         span.Slice(bytesWritten).Clear();
+    }
+    public static string TincatDecrypt(ReadOnlySpan<byte> data)
+    {
+        int num = 63;
+        Span<byte> result = stackalloc byte[data.Length];
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            num = unchecked((data[i] ^ EncryptionKey[i % EncryptionKey.Length]) - i - num);
+            result[i] = (byte)num;
+        }
+
+        return Win1252ToString(result);
+    }
+
+    public static byte[] TincatEncrypt(string data)
+    {
+        int num = 63;
+        var result = new byte[data.Length];
+
+        for (int i = 0; i < data.Length; i++)
+        {
+            result[i] = (byte)unchecked((data[i] + i + num) ^ EncryptionKey[i % EncryptionKey.Length]);
+            num = data[i];
+        }
+
+        return result;
     }
 }
