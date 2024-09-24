@@ -239,7 +239,7 @@ public class SacredClient
         var sacredPayload = tincatPayload.AsSpan(SacredHeader.DataSize);
 
         //Reply positively to every packet
-        SendLobbyResult(new LobbyResult(LobbyResults.Ok, sacredHeader.Type1));
+        SendLobbyResult(LobbyResults.Ok, sacredHeader.Type1);
 
         switch (sacredHeader.Type1)
         {
@@ -500,9 +500,9 @@ public class SacredClient
         SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
     }
 
-    public void SendLobbyResult(LobbyResult result)
+    public void SendLobbyResult(LobbyResults result, SacredMsgType answeringTo)
     {
-        SendPacket(SacredMsgType.LobbyResult, result.ToArray());
+        SendPacket(SacredMsgType.LobbyResult, new LobbyResult(result, answeringTo).Serialize());
     }
 
     public void SendPublicData(ReadOnlySpan<byte> data)

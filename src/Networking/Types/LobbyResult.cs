@@ -3,57 +3,31 @@ using Sacred.Networking.Structs;
 
 namespace Sacred.Networking.Types;
 
-public class LobbyResult
+/// <summary>
+/// Generic answer to a message
+/// </summary>
+/// <param name="Result">The result code</param>
+/// <param name="AnsweringTo">The message code we're answering to</param>
+public record LobbyResult(LobbyResults Result, SacredMsgType AnsweringTo) : ISerializable<LobbyResult>
 {
-    public const int DataSize = SacredHeaderData.DataSize;
-
-    public LobbyResultData Data;
-
-    public LobbyResults Result
+    public static LobbyResult Deserialize(ReadOnlySpan<byte> span)
     {
-        get => (LobbyResults)Data.result;
-        set => Data.result = (int)value;
+        using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
+
+        var result = (LobbyResults)reader.ReadInt32();
+        var answeringTo = (SacredMsgType)reader.ReadInt32();
+
+        return new LobbyResult(result, answeringTo);
     }
 
-    public SacredMsgType Last
+    public byte[] Serialize()
     {
-        get => (SacredMsgType)Data.last;
-        set => Data.last = (int)value;
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms);
+
+        writer.Write((int)Result);
+        writer.Write((int)AnsweringTo);
+
+        return ms.ToArray();
     }
-
-    public LobbyResult(LobbyResults result, SacredMsgType last)
-    {
-        Result = result;
-        Last = last;
-    }
-
-
-    public LobbyResult(in LobbyResultData data)
-    {
-        Data = data;
-    }
-
-    public LobbyResult(ReadOnlySpan<byte> data)
-    {
-        Data = MemoryMarshal.Read<LobbyResultData>(data);
-    }
-
-    public byte[] ToArray()
-    {
-        unsafe
-        {
-            fixed (LobbyResultData* data = &Data)
-            {
-                var arr = new byte[DataSize];
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    arr[i] = data->rawData[i];
-                }
-                return arr;
-            }
-        }
-    }
-
-    public override string ToString() =>
-        $"Result: {Result}, Last: {Last}";
 }
