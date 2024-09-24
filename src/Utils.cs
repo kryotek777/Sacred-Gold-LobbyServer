@@ -96,6 +96,12 @@ internal static class Utils
         int bytesWritten = Windows1252Encoding.GetBytes(str, span);
         span.Slice(bytesWritten).Clear();
     }
+
+    public static byte[] StringToWin1252(string str)
+    {
+        return Windows1252Encoding.GetBytes(str);
+    }
+
     public static string TincatDecrypt(ReadOnlySpan<byte> data)
     {
         int num = 63;

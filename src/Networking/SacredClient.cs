@@ -250,7 +250,7 @@ public class SacredClient
             case SacredMsgType.ClientChatMessage:
                 OnClientChatMessage(tincatHeader, sacredHeader, sacredPayload);
                 break;
-            case SacredMsgType.AcceptClientLogin:
+            case SacredMsgType.ClientLoginResult:
                 OnAcceptClientLogin(tincatHeader, sacredHeader, sacredPayload);
                 break;
             case SacredMsgType.LobbyResult:
@@ -329,23 +329,23 @@ public class SacredClient
             return;
         }   
 
-
         ClientType = ClientType.GameClient;
 
-        clientName = Utils.Win1252ToString(payload.Slice(0, 32));
+        var loginRequest = LoginRequest.Deserialize(payload);
 
-        var ms = new MemoryStream();
-        var response = new BinaryWriter(ms);
+        clientName = loginRequest.Username;
 
-        response.Write(0);
-        for (int i = 0; i < 63; i++)
-        {
-            response.Write(ConnectionId);
-        }
+        var loginResult = new LoginResult(
+            Result: LobbyResults.Ok,
+            Ip: connection.RemoteEndPoint.Address,
+            PermId: (int)ConnectionId,
+            Message: "Welcome!"
+        );
 
-        SendPacket(SacredMsgType.AcceptClientLogin, ms.ToArray());
+        SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
 
-        Log.Info($"{GetPrintableName()} connected as a GameClient");
+        Log.Info($"Client logged in:\n{loginRequest}");
+        Log.Trace($"Answering with:\n{loginResult}");
     }
 
     private void OnServerLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)

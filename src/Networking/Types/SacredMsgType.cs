@@ -11,7 +11,7 @@ public enum SacredMsgType : ushort
     ClientChatMessage = 30,
 
     //Outgoing
-    AcceptClientLogin = 16,
+    ClientLoginResult = 16,
     SendPublicData = 11,
     UpdateServerInfo = 12,
     LobbyResult = 15,
