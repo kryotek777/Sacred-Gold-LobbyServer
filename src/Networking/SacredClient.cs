@@ -69,7 +69,15 @@ public class SacredClient
 
     public void SendPacket(TincatPacket packet) => sendQueue.Add(packet);
 
-    public string GetPrintableName() => $"#{ConnectionId} {RemoteEndPoint}";
+    public string GetPrintableName()
+    {
+        if(ClientType == ClientType.GameClient)
+        {
+            return $"{clientName} #{ConnectionId} {RemoteEndPoint}";
+        }
+        else 
+            return $"#{ConnectionId} {RemoteEndPoint}";
+    }    
 
     private void ReadLoop()
     {
