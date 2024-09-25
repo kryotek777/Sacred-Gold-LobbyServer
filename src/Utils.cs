@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -128,5 +129,33 @@ internal static class Utils
         }
 
         return result;
+    }
+
+    public static byte[] ZLibCompress(byte[] data)
+    {
+        using (var memoryStream = new MemoryStream())
+        {
+            using (var zlibStream = new ZLibStream(memoryStream, CompressionLevel.Optimal))
+            {
+                zlibStream.Write(data, 0, data.Length);
+            }
+            return memoryStream.ToArray();
+        }
+    }
+
+    // Function to decompress data using ZlibStream
+    public static byte[] ZLibDecompress(byte[] data)
+    {
+        using (var memoryStream = new MemoryStream(data))
+        {
+            using (var zlibStream = new ZLibStream(memoryStream, CompressionMode.Decompress))
+            {
+                using (var outputStream = new MemoryStream())
+                {
+                    zlibStream.CopyTo(outputStream);
+                    return outputStream.ToArray();
+                }
+            }
+        }
     }
 }
