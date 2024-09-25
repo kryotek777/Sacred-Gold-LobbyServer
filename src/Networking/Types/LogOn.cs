@@ -4,130 +4,43 @@ using Sacred.Networking.Structs;
 
 namespace Sacred.Networking.Types;
 
-public class LogOn
+public record LogOn(
+    uint Magic,
+    uint ConnectionId,
+    string Username,
+    string Password,
+    int Unknown
+) : ISerializable<LogOn>
 {
-    public const int DataSize = LogOnData.DataSize;
     public const uint LogOnMagic = 0xDABAFBEF;
     public const uint LogOnConnId = 0xEFFFFFEE;
 
-    public LogOnData Data;
+    public LogOn(uint connId) : this(LogOnMagic, connId, "user", "-", 0) { }
 
-    public uint Magic
+    public static LogOn Deserialize(ReadOnlySpan<byte> span)
     {
-        get => Data.magic;
-        set => Data.magic = value;
+        using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
+
+        var Magic = reader.ReadUInt32();
+        var ConnectionId = reader.ReadUInt32();
+        var Username = Utils.Win1252ToString(reader.ReadBytes(32));
+        var Password = Utils.Win1252ToString(reader.ReadBytes(8));
+        var Unknown = reader.ReadInt32();
+
+        return new LogOn(Magic, ConnectionId, Username, Password, Unknown);
     }
 
-    public uint ConnectionId
+    public byte[] Serialize()
     {
-        get => Data.connId;
-        set => Data.connId = value;
-    }
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms);
 
-    public string User
-    {
-        get
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.user)
-                {
-                    var span = new ReadOnlySpan<byte>(p, 32);
-                    return Utils.Win1252ToString(span);
-                }
-            }
-        }
+        writer.Write(Magic);
+        writer.Write(ConnectionId);
+        writer.Write(Utils.StringToWin1252(Username).PadToSize(32));
+        writer.Write(Utils.StringToWin1252(Password).PadToSize(8));
+        writer.Write(Unknown);
 
-        set
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.user)
-                {
-                    var span = new Span<byte>(p, 32);
-                    Utils.StringToWin1252(value, span);
-                }
-            }
-        }
-    }
-
-    public string Password
-    {
-        get
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.password)
-                {
-                    var span = new ReadOnlySpan<byte>(p, 8);
-                    return Utils.Win1252ToString(span);
-                }
-            }
-        }
-
-        set
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.password)
-                {
-                    var span = new Span<byte>(p, 8);
-                    Utils.StringToWin1252(value, span);
-                }
-            }
-        }
-    }
-
-    public uint Unknown
-    {
-        get => Data.unknown;
-        set => Data.unknown = value;
-    }
-
-
-    public LogOn(uint connectionId)
-    {
-        Magic = LogOnMagic;
-        ConnectionId = connectionId;
-        User = "user";
-        Password = "-";
-        Unknown = 0;
-    }
-
-    public LogOn(in LogOnData data)
-    {
-        Data = data;
-    }
-
-    public LogOn(ReadOnlySpan<byte> data)
-    {
-        Data = MemoryMarshal.Read<LogOnData>(data);
-    }
-
-    public byte[] ToArray()
-    {
-        unsafe
-        {
-            fixed (LogOnData* data = &Data)
-            {
-                var arr = new byte[DataSize];
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    arr[i] = data->rawData[i];
-                }
-                return arr;
-            }
-        }
-    }
-
-    public override string ToString()
-    {
-        return
-            $"Magic: {Magic:X}\n" +
-            $"Connection Id: {ConnectionId}\n" +
-            $"User: '{User}'\n" +
-            $"Password: '{Password}'\n" +
-            $"Unknown: {Unknown:X}\n";
-
+        return ms.ToArray();
     }
 }

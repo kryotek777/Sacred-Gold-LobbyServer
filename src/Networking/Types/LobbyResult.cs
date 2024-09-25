@@ -1,6 +1,3 @@
-using System.Runtime.InteropServices;
-using Sacred.Networking.Structs;
-
 namespace Sacred.Networking.Types;
 
 /// <summary>

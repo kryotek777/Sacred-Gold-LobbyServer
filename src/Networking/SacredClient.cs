@@ -284,19 +284,19 @@ public class SacredClient
 
     private void OnTincatLogMeOn(TincatPacket packet)
     {
-        var logOnData = new LogOn(packet.Payload);
+        var logOnData = LogOn.Deserialize(packet.Payload);
 
         Log.Trace($"Got TincatLogMeOn from {GetPrintableName()}\n{logOnData}");
 
         if (
             logOnData.Magic == LogOn.LogOnMagic &&
             logOnData.ConnectionId == LogOn.LogOnConnId &&
-            logOnData.User == "user" &&
+            logOnData.Username == "user" &&
             logOnData.Password == "passwor"
         )
         {
             var response = new LogOn(ConnectionId);
-            SendPacket(TincatMsgType.LOGONACCEPTED, response.ToArray());
+            SendPacket(TincatMsgType.LOGONACCEPTED, response.Serialize());
 
             Log.Trace($"{GetPrintableName()} Logged at tincat level\n{response}");
         }
