@@ -27,5 +27,5 @@ public enum SacredMsgType : ushort
     MaybeCustomMessage = 56,
     MaybeLobbyMessage = 48,
 
-
+    PublicDataRequest = 9,
 }
