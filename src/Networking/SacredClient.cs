@@ -14,7 +14,7 @@ public class SacredClient
     public ServerInfo? ServerInfo { get; private set; }
     public string? clientName { get; private set; }
     public bool hasSelectedCharacter = false;
-    public byte[] publicData { get; private set; }
+    public ProfileData profileData { get; private set; }
 
     private SacredConnection connection;
     private CancellationTokenSource cancellationTokenSource;
@@ -270,6 +270,9 @@ public class SacredClient
             case SacredMsgType.ReceivePublicData:
                 OnReceivePublicData(tincatHeader, sacredHeader, sacredPayload);
                 break;
+            case SacredMsgType.PublicDataRequest:
+                OnPublicDataRequest(tincatHeader, sacredHeader, sacredPayload);
+                break;
             default:
                 Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
                 Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
@@ -328,6 +331,44 @@ public class SacredClient
     #endregion
 
     #region OnSacred
+
+    private void OnPublicDataRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var request = PublicDataRequest.Deserialize(payload);
+
+        if(request.PermId == (int)ConnectionId && request.BlockId == 10)
+        {          
+            if(profileData != null)
+            {
+                Log.Trace($"{GetPrintableName()} Requested their public data");
+
+                SendProfileData((int)ConnectionId, profileData);
+            }
+        }
+        else if(request.BlockId <= 8)
+        {
+            Log.Error($"{GetPrintableName()} Character requests aren't implemented yet!");
+        }
+        else
+        {
+            Log.Error($"{GetPrintableName()} Requested public data with an invalid block {request}");
+        }
+    }
+
+
+    private void OnReceivePublicData(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var pubData = PublicData.Deserialize(payload);
+
+        //We received our profile data
+        if(pubData.PermId == (int)ConnectionId && pubData.BlockId == 10)
+        {
+            profileData = pubData.ReadProfileData();
+
+            //Update the data for all clients
+            LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, profileData));
+        }
+    }
 
     private void OnClientLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -434,17 +475,11 @@ public class SacredClient
                 x.UserJoinedRoom(ConnectionId, clientName);
                 UserJoinedRoom(x.ConnectionId, x.clientName);
 
-                x.SendPublicData(publicData);
-                SendPublicData(x.publicData);
+                x.SendProfileData((int)ConnectionId, profileData);
+                SendProfileData((int)x.ConnectionId, x.profileData);
             }
         });
     }
-
-    private void OnReceivePublicData(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
-    {
-        publicData = payload.ToArray();
-    }
-
 
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -505,20 +540,10 @@ public class SacredClient
         SendPacket(SacredMsgType.LobbyResult, new LobbyResult(result, answeringTo).Serialize());
     }
 
-    public void SendPublicData(ReadOnlySpan<byte> data)
+    public void SendProfileData(int permId, ProfileData data)
     {
-        //Calculate uncompressed data size
-        //var compressedData = data.Slice(22);
-        //var zlibStream = new ZLibStream(new MemoryStream(compressedData.ToArray()), CompressionMode.Decompress);
-        //var uncompressedData = new MemoryStream();
-        //zlibStream.CopyTo(uncompressedData);
-        //var dataSize = uncompressedData.Length;
-
-        //Modify the length of the payload
-        var payload = data.ToArray();
-        payload[15] = 2;
-
-        SendPacket(SacredMsgType.SendPublicData, payload);
+        var publicData = PublicData.FromProfileData(permId, data);
+        SendPacket(SacredMsgType.SendPublicData, publicData.Serialize());
     }
 
     public void UserJoinedRoom(uint connId, string name)
