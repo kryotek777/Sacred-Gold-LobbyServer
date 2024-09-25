@@ -9,7 +9,7 @@ namespace Sacred.Networking.Types;
 /// <param name="Result">The result code for the login request</param>
 /// <param name="Ip">The public ip address of the client</param>
 /// <param name="PermId">The client's permId</param>
-/// <param name="Message">A message I don't know the usage of</param>
+/// <param name="Message">A message that's shown in sacred's network log</param>
 /// </summary>
 public record LoginResult(
     LobbyResults Result,
