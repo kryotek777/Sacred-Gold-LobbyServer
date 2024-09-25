@@ -360,10 +360,13 @@ public class SacredClient
     {
         var pubData = PublicData.Deserialize(payload);
 
-        //We received our profile data
-        if(pubData.PermId == (int)ConnectionId && pubData.BlockId == 10)
+        //The lobby received the client's profile data
+        if(pubData.PermId == (int)ConnectionId && pubData.BlockId == Constants.ProfileBlockId)
         {
             profileData = pubData.ReadProfileData();
+
+            //Accept the changes
+            SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
 
             //Update the data for all clients
             LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, profileData));
