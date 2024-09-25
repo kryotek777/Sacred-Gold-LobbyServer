@@ -28,4 +28,5 @@ public enum SacredMsgType : ushort
     MaybeLobbyMessage = 48,
 
     PublicDataRequest = 9,
+    ServerListRequest = 20,
 }

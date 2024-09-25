@@ -273,6 +273,9 @@ public class SacredClient
             case SacredMsgType.PublicDataRequest:
                 OnPublicDataRequest(tincatHeader, sacredHeader, sacredPayload);
                 break;
+            case SacredMsgType.ServerListRequest:
+                OnServerListRequest(tincatHeader, sacredHeader, sacredPayload);
+                break;
             default:
                 Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
                 Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
@@ -331,6 +334,16 @@ public class SacredClient
     #endregion
 
     #region OnSacred
+    private void OnServerListRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var serverListRequest = ServerListRequest.Deserialize(payload);
+
+        var id = serverListRequest.ChannelId;
+
+        Log.Trace($"{GetPrintableName()} requested the server list for channel {id}, but channels aren't implemented yet");
+
+        SendServerList();
+    }
 
     private void OnPublicDataRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
@@ -462,9 +475,6 @@ public class SacredClient
         //Immediately join Room #0
         //Rooms aren't implemented yet, but if we force the right answer the client will happily join
         JoinRoom(0);
-
-        //Update the client's server list
-        SendServerList();
 
         //Send the MOTD
         SendMotd();
