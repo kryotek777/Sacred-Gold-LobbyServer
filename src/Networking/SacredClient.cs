@@ -485,8 +485,8 @@ public class SacredClient
         {
             if (x.ClientType == ClientType.GameClient && x.hasSelectedCharacter && x.ConnectionId != ConnectionId)
             {
-                x.UserJoinedRoom(ConnectionId, clientName);
-                UserJoinedRoom(x.ConnectionId, x.clientName);
+                x.UserJoinedRoom((int)ConnectionId, clientName);
+                UserJoinedRoom((int)x.ConnectionId, x.clientName);
 
                 x.SendProfileData((int)ConnectionId, profileData);
                 SendProfileData((int)x.ConnectionId, x.profileData);
@@ -559,16 +559,11 @@ public class SacredClient
         SendPacket(SacredMsgType.SendPublicData, publicData.Serialize());
     }
 
-    public void UserJoinedRoom(uint connId, string name)
+    public void UserJoinedRoom(int permId, string name)
     {
-        var ms = new MemoryStream();
-        var w = new BinaryWriter(ms);
+        var data = new UserJoinLeave(permId, name);
 
-        w.Write(connId);
-        w.Write(Utils.Windows1252Encoding.GetBytes(name));
-        w.Write((byte)0);
-
-        SendPacket(SacredMsgType.OtherClientJoinedLobby, ms.ToArray());
+        SendPacket(SacredMsgType.OtherClientJoinedLobby, data.Serialize());
     }
 
     public void UserLeavedRoom(uint connId)
