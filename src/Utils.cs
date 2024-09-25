@@ -131,6 +131,17 @@ internal static class Utils
         return result;
     }
 
+    public static T[] PadToSize<T>(this T[] array, int size)
+    {
+        if(size > array.Length)
+        {
+            var result = new T[size];
+            Array.Copy(array, result, array.Length);
+            return result;
+        }
+        else return array;
+    }
+
     public static byte[] ZLibCompress(byte[] data)
     {
         using (var memoryStream = new MemoryStream())
