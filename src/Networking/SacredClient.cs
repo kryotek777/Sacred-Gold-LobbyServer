@@ -276,6 +276,9 @@ public class SacredClient
             case SacredMsgType.ServerListRequest:
                 OnServerListRequest(tincatHeader, sacredHeader, sacredPayload);
                 break;
+            case SacredMsgType.ChannelJoinRequest:
+                OnChannelJoinRequest(tincatHeader, sacredHeader, sacredPayload);
+                break;
             default:
                 Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
                 Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
@@ -334,13 +337,22 @@ public class SacredClient
     #endregion
 
     #region OnSacred
+    private void OnChannelJoinRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    {
+        var channelJoinRequest = ChannelJoinRequest.Deserialize(payload);
+
+        Log.Warning($"{GetPrintableName()} asked to join channel {channelJoinRequest.ChannelId}, but channels aren't implemented yet!");
+
+        JoinRoom(0);
+    }
+
     private void OnServerListRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
         var serverListRequest = ServerListRequest.Deserialize(payload);
 
         var id = serverListRequest.ChannelId;
 
-        Log.Trace($"{GetPrintableName()} requested the server list for channel {id}, but channels aren't implemented yet");
+        Log.Warning($"{GetPrintableName()} requested the server list for channel {id}, but channels aren't implemented yet!");
 
         SendServerList();
     }
@@ -477,26 +489,11 @@ public class SacredClient
     }
     private void OnClientCharacterSelect(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
-        //Immediately join Room #0
-        //Rooms aren't implemented yet, but if we force the right answer the client will happily join
-        JoinRoom(0);
-
         //Send the MOTD
         SendMotd();
 
         hasSelectedCharacter = true;
 
-        LobbyServer.ForEachClient(x =>
-        {
-            if (x.ClientType == ClientType.GameClient && x.hasSelectedCharacter && x.ConnectionId != ConnectionId)
-            {
-                x.UserJoinedRoom((int)ConnectionId, clientName);
-                UserJoinedRoom((int)x.ConnectionId, x.clientName);
-
-                x.SendProfileData((int)ConnectionId, profileData);
-                SendProfileData((int)x.ConnectionId, x.profileData);
-            }
-        });
     }
 
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
@@ -547,6 +544,26 @@ public class SacredClient
     public void JoinRoom(int roomNumber)
     {
         SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
+
+        string myName;
+        lock(_lock)
+            myName = $"{Profile.Account}.CharacterName";
+
+        LobbyServer.ForEachClient(cl => 
+        {
+            if(cl.ClientType == ClientType.GameClient && cl.hasSelectedCharacter && cl.ConnectionId != ConnectionId)
+            {
+                cl.UserLeavedRoom(ConnectionId);
+                cl.UserJoinedRoom((int)ConnectionId, myName);
+
+                string theirName;
+                lock(cl._lock)
+                    theirName = $"{cl.Profile.Account}.CharacterName";
+
+                UserJoinedRoom((int)cl.ConnectionId, theirName);
+
+            }
+        });
     }
 
     public void SendLobbyResult(LobbyResults result, SacredMsgType answeringTo)

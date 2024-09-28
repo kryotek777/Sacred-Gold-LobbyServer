@@ -29,4 +29,5 @@ public enum SacredMsgType : ushort
 
     PublicDataRequest = 9,
     ServerListRequest = 20,
+    ChannelJoinRequest = 25,
 }
