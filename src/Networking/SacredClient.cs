@@ -424,7 +424,7 @@ public class SacredClient
         ClientType = ClientType.GameServer;
 
         //Save the server's information
-        ServerInfo = new ServerInfo(payload);
+        ServerInfo = ServerInfo.Deserialize(payload);
 
         //Resolve the external IP of the server
         IPAddress externalIP;
@@ -432,23 +432,25 @@ public class SacredClient
         if (RemoteEndPoint.Address.IsInternal())
         {
             externalIP = Utils.GetExternalIp();
-            //Correct the server's IP
-            ServerInfo.IpAddress = externalIP;
         }
         else
         {
             externalIP = RemoteEndPoint.Address;
         }
 
-        //Assign a ServerId
-        ServerInfo.ServerId = ConnectionId;
+        //Correct the server's info
+        ServerInfo = ServerInfo with
+        {
+            ExternalIp = externalIP,
+            ServerId = ConnectionId,
+            ChannelId = 0
+        };
 
         //Accept the login
         SendPacket(SacredMsgType.AcceptServerLogin, externalIP.GetAddressBytes());
 
         //Broadcast the new server to all clients
-        ServerInfo.Hidden = 0;
-        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.ToArray());
+        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.Serialize());
         LobbyServer.SendPacketToAllGameClients(packet);
 
         //Done
@@ -458,15 +460,18 @@ public class SacredClient
 
     private void OnServerChangePublicInfo(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
-        var newInfo = new ServerInfo(payload);
+        var newInfo = ServerInfo.Deserialize(payload);
 
-        ServerInfo.Flags = newInfo.Flags;
-        ServerInfo.MaxPlayers = newInfo.MaxPlayers;
-        ServerInfo.CurrentPlayers = newInfo.CurrentPlayers;
+        ServerInfo = ServerInfo! with
+        {
+            Flags = newInfo.Flags,
+            MaxPlayers = newInfo.MaxPlayers,
+            CurrentPlayers = newInfo.CurrentPlayers
+        };
 
         Log.Info($"GameServer {GetPrintableName()} changed public info");
 
-        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.ToArray());
+        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.Serialize());
         LobbyServer.SendPacketToAllGameClients(packet);
 
     }
@@ -535,11 +540,9 @@ public class SacredClient
 
         foreach (var info in infos)
         {
-            info.Hidden = 0;
-            
-            SendPacket(SacredMsgType.UpdateServerInfo, info.ToArray());
+            SendPacket(SacredMsgType.UpdateServerInfo, info.Serialize());
         }
-    }
+    }   
 
     public void JoinRoom(int roomNumber)
     {

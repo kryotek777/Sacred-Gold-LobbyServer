@@ -5,126 +5,64 @@ using Sacred.Networking.Structs;
 
 namespace Sacred.Networking.Types;
 
-public class ServerInfo
+/// <summary>
+/// Generic answer to a message
+/// </summary>
+/// <param name="Result">The result code</param>
+/// <param name="AnsweringTo">The message code we're answering to</param>
+public record ServerInfo(
+    string Name,
+    IPAddress LocalIp,
+    IPAddress ExternalIp,
+    int Port,
+    short CurrentPlayers,
+    short MaxPlayers,
+    int Flags,
+    uint ServerId,
+    uint NetworkProtocolVersion,
+    uint ClientGameVersion,
+    int ChannelId
+) : ISerializable<ServerInfo>
 {
-    public const int DataSize = ServerInfoData.DataSize;
-    public ServerInfoData Data;
-
-    public string Name
+    public static ServerInfo Deserialize(ReadOnlySpan<byte> span)
     {
-        get
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.name)
-                {
-                    var span = new ReadOnlySpan<byte>(p, 80);
-                    return Utils.Win1252ToString(span);
-                }
-            }
-        }
+        using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
 
-        set
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.name)
-                {
-                    var span = new Span<byte>(p, 80);
-                    Utils.StringToWin1252(value, span);
-                }
-            }
-        }
+        var Name = Utils.Win1252ToString(reader.ReadBytes(Constants.UsernameMaxLength));
+        var LocalIp = new IPAddress(reader.ReadBytes(4));
+        var ExternalIp = new IPAddress(reader.ReadBytes(4));
+        var Port = reader.ReadInt32();
+        var CurrentPlayers = reader.ReadInt16();
+        var MaxPlayers = reader.ReadInt16();
+        var Flags = reader.ReadInt32();
+        var ServerId = reader.ReadUInt32();
+        var NetworkProtocolVersion = reader.ReadUInt32();
+        var ClientGameVersion = reader.ReadUInt32();
+        var ChannelId = reader.ReadInt32();
+        
+        return new ServerInfo(Name, LocalIp, ExternalIp, Port, CurrentPlayers, MaxPlayers, Flags, ServerId, NetworkProtocolVersion, ClientGameVersion, ChannelId);
     }
 
-    public IPAddress IpAddress
+    public byte[] Serialize()
     {
-        get => new IPAddress(Data.ipAddress);
-        set => Data.ipAddress = value.ToInt();
-    }
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms);
 
-    public int Port
-    {
-        get => Data.port;
-        set => Data.port = value;
-    }
+        var LocalIp = this.LocalIp ?? IPAddress.None;
+        var ExternalIp = this.LocalIp ?? IPAddress.None;
 
-    public short CurrentPlayers
-    {
-        get => Data.currentPlayers;
-        set => Data.currentPlayers = value;
-    }
+        writer.Write(Utils.StringToWin1252(Name).PadToSize(Constants.UsernameMaxLength));
+        writer.Write(LocalIp.GetAddressBytes());
+        writer.Write(ExternalIp.GetAddressBytes());
+        writer.Write(Port);
+        writer.Write(CurrentPlayers);
+        writer.Write(MaxPlayers);
+        writer.Write(Flags);
+        writer.Write(ServerId);
+        writer.Write(NetworkProtocolVersion);
+        writer.Write(ClientGameVersion);
+        writer.Write(ChannelId);
 
-    public short MaxPlayers
-    {
-        get => Data.maxPlayers;
-        set => Data.maxPlayers = value;
-    }
-
-    public int Flags
-    {
-        get => Data.flags;
-        set => Data.flags = value;
-    }
-
-    public uint ServerId
-    {
-        get => Data.serverId;
-        set => Data.serverId = value;
-    }
-
-    public int Version
-    {
-        get => Data.version;
-        set => Data.version = value;
-    }
-
-    public int Hidden
-    {
-        get => Data.hidden;
-        set => Data.hidden = value;
-    }
-
-    public ServerInfo()
-    {
-        Data = default;
-    }
-
-    public ServerInfo(in ServerInfoData data)
-    {
-        Data = data;
-    }
-
-    public ServerInfo(ReadOnlySpan<byte> data)
-    {
-        Data = MemoryMarshal.Read<ServerInfoData>(data);
-    }
-
-    public byte[] ToArray()
-    {
-        unsafe
-        {
-            fixed (ServerInfoData* data = &Data)
-            {
-                var arr = new byte[DataSize];
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    arr[i] = data->rawData[i];
-                }
-                return arr;
-            }
-        }
-    }
-
-    public override string ToString()
-    {
-        return
-            $"Name: {Name}\n" +
-            $"IP Address: {IpAddress}:{Port}\n" +
-            $"Players: {CurrentPlayers}/{MaxPlayers}\n" +
-            $"Flags: {Flags:X}\n" +
-            $"Server ID: {ServerId}\n" +
-            $"Version: {Version:X}\n" +
-            $"Hidden: {Hidden}\n";
+        return ms.ToArray();
     }
 }
