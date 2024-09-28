@@ -1,121 +1,38 @@
-using System.Runtime.InteropServices;
 using System.Text;
-using Sacred.Networking.Structs;
 
 namespace Sacred.Networking.Types;
 
-public class SacredChatMessage
+public record SacredChatMessage
+(
+    string SenderName,
+    int SenderPermId,
+    int DestinationPermId,
+    string Message
+) : ISerializable<SacredChatMessage>
 {
-    public const int DataSize = SacredChatMessageData.DataSize;
 
-    public SacredChatMessageData Data;
-
-    public string From
+    public static SacredChatMessage Deserialize(ReadOnlySpan<byte> span)
     {
-        get
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.senderText)
-                {
-                    var span = new ReadOnlySpan<byte>(p, 90);
-                    return Utils.Win1252ToString(span);
-                }
-            }
-        }
+        using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
 
-        set
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.senderText)
-                {
-                    var span = new Span<byte>(p, 90);
-                    Utils.StringToWin1252(value, span);
-                }
-            }
-        }
+        var SenderName = Utils.Win1252ToString(reader.ReadBytes(Constants.UsernameMaxLength));
+        var SenderPermId = reader.ReadInt32();
+        var DestinationPermId = reader.ReadInt32();
+        var Message = Utils.Win1252ToString(reader.ReadBytes(Constants.ChatMessageMaxLength));
+
+        return new SacredChatMessage(SenderName, SenderPermId, DestinationPermId, Message);      
     }
 
-    public bool IsPrivate
+    public byte[] Serialize()
     {
-        get => Data.isPrivateMessage != 0;
-        set => Data.isPrivateMessage = value ? 1 : 0;
+        using var ms = new MemoryStream();
+        using var writer = new BinaryWriter(ms);
+
+        writer.Write(Utils.StringToWin1252(SenderName).PadToSize(Constants.UsernameMaxLength));
+        writer.Write(SenderPermId);
+        writer.Write(DestinationPermId);
+        writer.Write(Utils.StringToWin1252(Message).PadToSize(Constants.ChatMessageMaxLength));
+
+        return ms.ToArray();
     }
-
-    public uint SenderId 
-    {
-        get => Data.senderId;
-        set => Data.senderId = value;
-    }
-
-    public string Message
-    {
-        get
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.messageText)
-                {
-                    var span = new ReadOnlySpan<byte>(p, 128);
-                    return Utils.Win1252ToString(span);
-                }
-            }
-        }
-
-        set
-        {
-            unsafe
-            {
-                fixed (byte* p = Data.messageText)
-                {
-                    var span = new Span<byte>(p, 128);
-                    Utils.StringToWin1252(value, span);
-                }
-            }
-        }
-    }
-
-    public SacredChatMessage(string from, string message, uint senderId, bool isPrivate)
-    {
-        ArgumentNullException.ThrowIfNull(from);
-        ArgumentNullException.ThrowIfNull(message);
-        From = from;
-        Message = message;
-        SenderId = senderId;
-        IsPrivate = isPrivate;
-    }
-
-
-    public SacredChatMessage(in SacredChatMessageData data)
-    {
-        Data = data;
-    }
-
-    public SacredChatMessage(ReadOnlySpan<byte> data)
-    {
-        Data = MemoryMarshal.Read<SacredChatMessageData>(data);
-    }
-
-    public byte[] ToArray()
-    {
-        unsafe
-        {
-            fixed (SacredChatMessageData* data = &Data)
-            {
-                var arr = new byte[DataSize];
-                for (int i = 0; i < arr.Length; i++)
-                {
-                    arr[i] = data->rawData[i];
-                }
-                return arr;
-            }
-        }
-    }
-
-    public override string ToString() => 
-    $"From: '{From}'\n" +
-    $"Text: '{Message}\n'" +
-    $"Private: {IsPrivate}\n"+
-    $"SenderId: {SenderId}\n";
 }

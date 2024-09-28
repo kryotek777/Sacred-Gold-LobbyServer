@@ -119,7 +119,7 @@ internal static partial class LobbyServer
             clientsLock.EnterReadLock();
             foreach (var cl in clients.Where(x => x.ClientType == Networking.ClientType.GameClient))
             {
-                cl.SendChatMessage("LobbyServer", message, 0, false);
+                cl.SendChatMessage("LobbyServer", message, 0);
             }
             clientsLock.ExitReadLock();
         }

@@ -496,16 +496,14 @@ public class SacredClient
 
     private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
     {
-        unsafe
+        //Ensure sender's parameters to prevent spoofing
+        var msg = SacredChatMessage.Deserialize(payload) with
         {
-            var data = MemoryMarshal.Read<SacredChatMessageData>(payload);
-            var span = new ReadOnlySpan<byte>(data.messageText, 128);
-        }
+            SenderName = clientName ?? "<unknown>",
+            SenderPermId = (int)ConnectionId
+        };
 
-        var msg = new SacredChatMessage(payload);
-        var newMsg = new SacredChatMessage(clientName ?? "<unknown>", msg.Message, ConnectionId, msg.IsPrivate);
-
-        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendSystemMessage, newMsg.ToArray()));
+        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendSystemMessage, msg.Serialize()));
 
         Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
     }
@@ -524,11 +522,11 @@ public class SacredClient
 
     #endregion
 
-    public void SendChatMessage(string from, string message, uint senderId, bool isPrivate) => SendChatMessage(new SacredChatMessage(from, message, senderId, isPrivate));
+    public void SendChatMessage(string from, string message, int senderId) => SendChatMessage(new SacredChatMessage(from, senderId, (int)ConnectionId, message));
 
     public void SendChatMessage(SacredChatMessage message)
     {
-        SendPacket(SacredMsgType.SendSystemMessage, message.ToArray());
+        SendPacket(MakePacket(SacredMsgType.SendSystemMessage, message.Serialize()));
     }
 
     public void SendServerList()
@@ -596,8 +594,7 @@ public class SacredClient
             SendChatMessage(
                 from: string.Empty, //Red Text
                 message: line,      //MOTD line
-                senderId: 0,        //From System
-                isPrivate: false    //Not a DM from another player
+                senderId: 0        //From System
             );
         }
     }
