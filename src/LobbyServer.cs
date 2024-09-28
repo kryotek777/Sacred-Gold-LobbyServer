@@ -82,6 +82,14 @@ internal static partial class LobbyServer
         clientsLock.ExitReadLock();
     }
 
+    public static SacredClient? GetClientFromPermId(int permId)
+    {
+        clientsLock.EnterReadLock();
+        var cl = clients.FirstOrDefault(x => permId == (int)x.ConnectionId);
+        clientsLock.ExitReadLock();
+        return cl;
+    }
+
     public static List<ServerInfo> GetAllServerInfos()
     {
         clientsLock.EnterReadLock();

@@ -79,4 +79,9 @@ public record ProfileData(
 
         return ms.ToArray();
     }
+
+    public static ProfileData CreateEmpty(int permId)
+    {
+        return new ProfileData(4, "", "", "", "", "", "", "", "", permId, false, 0, [ "", "", "", "", "", "" ], new byte[880]);
+    }
 }

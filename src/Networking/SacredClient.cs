@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 using Sacred.Networking.Types;
 
@@ -8,13 +7,15 @@ namespace Sacred.Networking;
 
 public class SacredClient
 {
+    public object _lock = new();
     public ClientType ClientType { get; private set; }
     public uint ConnectionId { get; private set; }
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfo? ServerInfo { get; private set; }
     public string? clientName { get; private set; }
     public bool hasSelectedCharacter = false;
-    public ProfileData profileData { get; private set; }
+    public ProfileData Profile { get; private set; }
+    public int SelectedBlock { get; set; }
 
     private SacredConnection connection;
     private CancellationTokenSource cancellationTokenSource;
@@ -33,6 +34,7 @@ public class SacredClient
         writeTask = null;
         sendQueue = new(new ConcurrentQueue<TincatPacket>());
         ServerInfo = null;
+        Profile = ProfileData.CreateEmpty((int)ConnectionId);
     }
 
     public void Start()
@@ -361,22 +363,37 @@ public class SacredClient
     {
         var request = PublicDataRequest.Deserialize(payload);
 
-        if(request.PermId == (int)ConnectionId && request.BlockId == 10)
+        if(request.BlockId == Constants.ProfileBlockId)
         {          
-            if(profileData != null)
-            {
-                Log.Trace($"{GetPrintableName()} Requested their public data");
+            var client = LobbyServer.GetClientFromPermId(request.PermId);
 
-                SendProfileData((int)ConnectionId, profileData);
+            if(client != null)
+            {
+                ProfileData data;
+
+                lock(client._lock)
+                {
+                    data = client.Profile;
+                }            
+
+                SendProfileData(request.PermId, client.Profile);
+            }
+            else
+            {
+                Log.Warning($"{GetPrintableName()} Requested public data of an invalid player: {request.PermId}");
+                SendLobbyResult(LobbyResults.ErrorUserNotFound, SacredMsgType.PublicDataRequest);
+
             }
         }
         else if(request.BlockId <= 8)
         {
             Log.Error($"{GetPrintableName()} Character requests aren't implemented yet!");
+            SendLobbyResult(LobbyResults.InternalError, SacredMsgType.PublicDataRequest);
         }
         else
         {
             Log.Error($"{GetPrintableName()} Requested public data with an invalid block {request}");
+            SendLobbyResult(LobbyResults.InvalidBlockSelected, SacredMsgType.PublicDataRequest);
         }
     }
 
@@ -388,13 +405,20 @@ public class SacredClient
         //The lobby received the client's profile data
         if(pubData.PermId == (int)ConnectionId && pubData.BlockId == Constants.ProfileBlockId)
         {
-            profileData = pubData.ReadProfileData();
+            lock(_lock)
+            {
+                Profile = pubData.ReadProfileData();
+            }
 
             //Accept the changes
             SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
 
             //Update the data for all clients
-            LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, profileData));
+            if(hasSelectedCharacter)
+            {
+                lock(_lock)
+                    LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, Profile));
+            }
         }
     }
 
