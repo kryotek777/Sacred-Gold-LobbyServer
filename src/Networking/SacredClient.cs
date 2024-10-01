@@ -257,7 +257,7 @@ public class SacredClient
             case SacredMsgType.ClientCharacterSelect:
                 OnClientCharacterSelect(tincatHeader, sacredHeader, sacredPayload);
                 break;
-            case SacredMsgType.ClientChatMessage:
+            case SacredMsgType.ReceiveChatMessage:
                 OnClientChatMessage(tincatHeader, sacredHeader, sacredPayload);
                 break;
             case SacredMsgType.ClientLoginResult:
@@ -266,7 +266,7 @@ public class SacredClient
             case SacredMsgType.LobbyResult:
                 OnLobbyResult(tincatHeader, sacredHeader, sacredPayload);
                 break;
-            case SacredMsgType.AcceptServerLogin:
+            case SacredMsgType.ServerLoginResult:
                 OnServerStartInfo(tincatHeader, sacredHeader, sacredPayload);
                 break;
             case SacredMsgType.ReceivePublicData:
@@ -483,10 +483,10 @@ public class SacredClient
         };
 
         //Accept the login
-        SendPacket(SacredMsgType.AcceptServerLogin, externalIP.GetAddressBytes());
+        SendPacket(SacredMsgType.ServerLoginResult, externalIP.GetAddressBytes());
 
         //Broadcast the new server to all clients
-        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.Serialize());
+        var packet = MakePacket(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
         LobbyServer.SendPacketToAllGameClients(packet);
 
         //Done
@@ -507,7 +507,7 @@ public class SacredClient
 
         Log.Info($"GameServer {GetPrintableName()} changed public info");
 
-        var packet = MakePacket(SacredMsgType.UpdateServerInfo, ServerInfo.Serialize());
+        var packet = MakePacket(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
         LobbyServer.SendPacketToAllGameClients(packet);
 
     }
@@ -529,7 +529,7 @@ public class SacredClient
             SenderPermId = (int)ConnectionId
         };
 
-        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendSystemMessage, msg.Serialize()));
+        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendChatMessage, msg.Serialize()));
 
         Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
     }
@@ -552,7 +552,7 @@ public class SacredClient
 
     public void SendChatMessage(SacredChatMessage message)
     {
-        SendPacket(MakePacket(SacredMsgType.SendSystemMessage, message.Serialize()));
+        SendPacket(MakePacket(SacredMsgType.SendChatMessage, message.Serialize()));
     }
 
     public void SendServerList()
@@ -561,13 +561,13 @@ public class SacredClient
 
         foreach (var info in infos)
         {
-            SendPacket(SacredMsgType.UpdateServerInfo, info.Serialize());
+            SendPacket(SacredMsgType.SendServerInfo, info.Serialize());
         }
     }   
 
     public void JoinRoom(int roomNumber)
     {
-        SendPacket(SacredMsgType.ClientJoinRoom, BitConverter.GetBytes(roomNumber));
+        SendPacket(SacredMsgType.ClientJoinChannel, BitConverter.GetBytes(roomNumber));
 
         string myName;
         lock(_lock)
@@ -605,7 +605,7 @@ public class SacredClient
     {
         var data = new UserJoinLeave(permId, name);
 
-        SendPacket(SacredMsgType.OtherClientJoinedLobby, data.Serialize());
+        SendPacket(SacredMsgType.OtherClientJoinedChannel, data.Serialize());
     }
 
     public void UserLeavedRoom(uint connId)
@@ -615,7 +615,7 @@ public class SacredClient
 
         w.Write(connId);
 
-        SendPacket(SacredMsgType.OtherClientLeavedLobby, ms.ToArray());
+        SendPacket(SacredMsgType.OtherClientLeftChannel, ms.ToArray());
     }
 
     public void Kick()
