@@ -1,0 +1,68 @@
+using Sacred.Networking.Types;
+
+public record struct PacketSecurityData(SacredMsgType Type, int Length, uint SecurityKey, bool DynamicSize, bool FromClient, bool FromServer, bool FromUnknown)
+{
+    public static PacketSecurityData Get(SacredMsgType Type)
+    {
+        return PacketDictionary[Type];
+    }
+
+    private static Dictionary<SacredMsgType, PacketSecurityData> PacketDictionary = new Dictionary<SacredMsgType, PacketSecurityData> {
+        { SacredMsgType.ClientFirstLoginRequest, new(Type: SacredMsgType.ClientFirstLoginRequest, Length: 256, SecurityKey: 0xDDCCBB01, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: true)},
+        { SacredMsgType.ClientLoginRequest, new(Type: SacredMsgType.ClientLoginRequest, Length: 176, SecurityKey: 0xDDCCBB02, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: true)},
+        { SacredMsgType.PrivateInfoRequest, new(Type: SacredMsgType.PrivateInfoRequest, Length: 14, SecurityKey: 0xDDCCBB03, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceivePrivateInfo, new(Type: SacredMsgType.ReceivePrivateInfo, Length: 126, SecurityKey: 0xDDCCBB04, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendPrivateInfo, new(Type: SacredMsgType.SendPrivateInfo, Length: 126, SecurityKey: 0xDDCCBB05, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.PublicInfoRequest, new(Type: SacredMsgType.PublicInfoRequest, Length: 18, SecurityKey: 0xDDCCBB06, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceivePublicInfo, new(Type: SacredMsgType.ReceivePublicInfo, Length: 0, SecurityKey: 0xDDCCBB07, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendPublicInfo, new(Type: SacredMsgType.SendPublicInfo, Length: 98, SecurityKey: 0xDDCCBB08, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.PublicDataRequest, new(Type: SacredMsgType.PublicDataRequest, Length: 28, SecurityKey: 0xDDCCBB09, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceivePublicData, new(Type: SacredMsgType.ReceivePublicData, Length: 131104, SecurityKey: 0xDDCCBB10, DynamicSize: true, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendPublicData, new(Type: SacredMsgType.SendPublicData, Length: 131104, SecurityKey: 0xDDCCBB11, DynamicSize: true, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ServerLoginRequest, new(Type: SacredMsgType.ServerLoginRequest, Length: 130, SecurityKey: 0xDDCCBB12, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: true)},
+        { SacredMsgType.ServerChangePublicInfo, new(Type: SacredMsgType.ServerChangePublicInfo, Length: 130, SecurityKey: 0xDDCCBB13, DynamicSize: false, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.ServerLogout, new(Type: SacredMsgType.ServerLogout, Length: 130, SecurityKey: 0xDDCCBB14, DynamicSize: false, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.LobbyResult, new(Type: SacredMsgType.LobbyResult, Length: 22, SecurityKey: 0xDDCCBB15, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClientLoginResult, new(Type: SacredMsgType.ClientLoginResult, Length: 282, SecurityKey: 0xDDCCBB16, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClientCharacterSelect, new(Type: SacredMsgType.ClientCharacterSelect, Length: 16, SecurityKey: 0xDDCCBB17, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceiveClientPublicDataFromServer, new(Type: SacredMsgType.ReceiveClientPublicDataFromServer, Length: 131104, SecurityKey: 0xDDCCBB18, DynamicSize: true, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.ServerRequestsClientsPublicData, new(Type: SacredMsgType.ServerRequestsClientsPublicData, Length: 28, SecurityKey: 0xDDCCBB19, DynamicSize: false, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.ServerListRequest, new(Type: SacredMsgType.ServerListRequest, Length: 18, SecurityKey: 0xDDCCBB1A, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendServerInfo, new(Type: SacredMsgType.SendServerInfo, Length: 130, SecurityKey: 0xDDCCBB1B, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.RemoveServer, new(Type: SacredMsgType.RemoveServer, Length: 130, SecurityKey: 0xDDCCBB1C, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ChannelListRequest, new(Type: SacredMsgType.ChannelListRequest, Length: 14, SecurityKey: 0xDDCCBB1D, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendChannelList, new(Type: SacredMsgType.SendChannelList, Length: 11664, SecurityKey: 0xDDCCBB1E, DynamicSize: true, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ChannelJoinRequest, new(Type: SacredMsgType.ChannelJoinRequest, Length: 16, SecurityKey: 0xDDCCBB1F, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClientJoinChannel, new(Type: SacredMsgType.ClientJoinChannel, Length: 16, SecurityKey: 0xDDCCBB20, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClientLeaveChannel, new(Type: SacredMsgType.ClientLeaveChannel, Length: 14, SecurityKey: 0xDDCCBB21, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.OtherClientJoinedChannel, new(Type: SacredMsgType.OtherClientJoinedChannel, Length: 98, SecurityKey: 0xDDCCBB22, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.OtherClientLeftChannel, new(Type: SacredMsgType.OtherClientLeftChannel, Length: 98, SecurityKey: 0xDDCCBB23, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceiveChatMessage, new(Type: SacredMsgType.ReceiveChatMessage, Length: 358, SecurityKey: 0xDDCCBB24, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.SendChatMessage, new(Type: SacredMsgType.SendChatMessage, Length: 358, SecurityKey: 0xDDCCBB25, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ReceivePrivateChatMessage, new(Type: SacredMsgType.ReceivePrivateChatMessage, Length: 358, SecurityKey: 0xDDCCBB26, DynamicSize: false, FromClient: true, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.SendPrivateChatMessage, new(Type: SacredMsgType.SendPrivateChatMessage, Length: 358, SecurityKey: 0xDDCCBB27, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Kick, new(Type: SacredMsgType.Kick, Length: 270, SecurityKey: 0xDDCCBB28, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Alarm, new(Type: SacredMsgType.Alarm, Length: 14, SecurityKey: 0xDDCCBB29, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.FindUserRequest, new(Type: SacredMsgType.FindUserRequest, Length: 94, SecurityKey: 0xDDCCBB2A, DynamicSize: false, FromClient: true, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.FoundUser, new(Type: SacredMsgType.FoundUser, Length: 274, SecurityKey: 0xDDCCBB2B, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ServerLoginResult, new(Type: SacredMsgType.ServerLoginResult, Length: 18, SecurityKey: 0xDDCCBB2C, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClosedNetNewCharacter, new(Type: SacredMsgType.ClosedNetNewCharacter, Length: 18, SecurityKey: 0xDDCCBB2D, DynamicSize: false, FromClient: true, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Reserved1, new(Type: SacredMsgType.Reserved1, Length: 0, SecurityKey: 0x0, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Reserved2, new(Type: SacredMsgType.Reserved2, Length: 0, SecurityKey: 0x0, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Reserved3, new(Type: SacredMsgType.Reserved3, Length: 0, SecurityKey: 0x0, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Reserved4, new(Type: SacredMsgType.Reserved4, Length: 0, SecurityKey: 0x0, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.Reserved5, new(Type: SacredMsgType.Reserved5, Length: 0, SecurityKey: 0x0, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.UserJoinedServer, new(Type: SacredMsgType.UserJoinedServer, Length: 22, SecurityKey: 0xDDCCBB2E, DynamicSize: false, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.UserLeftServer, new(Type: SacredMsgType.UserLeftServer, Length: 18, SecurityKey: 0xDDCCBB2F, DynamicSize: false, FromClient: false, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.UserKickedFromServer, new(Type: SacredMsgType.UserKickedFromServer, Length: 278, SecurityKey: 0xDDCCBB30, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ClientImportantMessage, new(Type: SacredMsgType.ClientImportantMessage, Length: 275, SecurityKey: 0xDDCCBB31, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ServerImportantMessage, new(Type: SacredMsgType.ServerImportantMessage, Length: 275, SecurityKey: 0xDDCCBB32, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.ServerShutdown, new(Type: SacredMsgType.ServerShutdown, Length: 270, SecurityKey: 0xDDCCBB33, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.AddFriend, new(Type: SacredMsgType.AddFriend, Length: 22, SecurityKey: 0xDDCCBB34, DynamicSize: false, FromClient: true, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.RemoveFriend, new(Type: SacredMsgType.RemoveFriend, Length: 22, SecurityKey: 0xDDCCBB35, DynamicSize: false, FromClient: true, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.AddedToFriends, new(Type: SacredMsgType.AddedToFriends, Length: 102, SecurityKey: 0xDDCCBB36, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.UpdateFriendStatus, new(Type: SacredMsgType.UpdateFriendStatus, Length: 274, SecurityKey: 0xDDCCBB37, DynamicSize: false, FromClient: false, FromServer: false, FromUnknown: false)},
+        { SacredMsgType.MessageOfTheDayRequest, new(Type: SacredMsgType.MessageOfTheDayRequest, Length: 144, SecurityKey: 0xDDCCBB38, DynamicSize: false, FromClient: true, FromServer: true, FromUnknown: false)},
+        { SacredMsgType.SendMessageOfTheDay, new(Type: SacredMsgType.SendMessageOfTheDay, Length: 131218, SecurityKey: 0xDDCCBB39, DynamicSize: true, FromClient: false, FromServer: false, FromUnknown: false)},
+    };
+}
