@@ -1,0 +1,55 @@
+
+# The TCP port on which the lobby will listen.
+# Ensure that clients configure this port in their NETWORK_LOBBYPORT 
+# setting within both Settings.cfg and GameServer.cfg.
+
+Port = 7066
+
+# The full or relative path to a text file on which the logs will be appended
+
+LogPath = "./log.txt"
+
+# Only messages with severity equal or higher than this value will be logged
+# Available values are: Trace, Info, Warning, Error
+
+LogLevel = "Info"
+
+# A message that will appear in a popoup the first time a client joins the lobby after starting the game.
+
+MessageOfTheDay = '''
+    Welcome player,
+    thanks for playing with us!
+'''
+
+# Fake servers that will be sent in the server list to act as separators.
+# Servers are always ordered alphabetically by the client,
+# so try to be clever with your names to preserve ordering!
+
+ServerSeparators = [ "## Vanilla ##", "## Modded ##" ]
+
+# Here you can ban people by their ip address
+# Bans can be of three types
+# Full: The connection is dropped instantly without even attemping to figure out the client's type.
+# use this to ban for security reasons
+# ClientOnly: They cannot play the game, but can still host servers.
+# use this for cheaters and general morons
+# ServerOnly: They can play the game, but cannot host servers.
+# use this for players with unstable connections that insinst on hosting their server
+
+# It is advisable to use "Full" as the ban type when dealing with dangerous clients 
+# while ClientOnly and ServerOnly are advised for 'soft' bans for people who just misbehave
+
+[[Bans]]
+Ip = "169.254.0.0"
+BanType = "Full"
+Reason = "Attempted exploits" # Note: reason isn't shown for Full bans
+
+[[Bans]]
+Ip = "169.254.0.1"
+BanType = "ClientOnly"
+Reason = "Cheated characters"
+
+[[Bans]]
+Ip = "169.254.0.2"
+BanType = "ServerOnly"
+Reason = "Unstable servers that always crash"

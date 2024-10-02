@@ -63,11 +63,3 @@ internal static class Log
     public static void Warning(string msg) => Write(LogSeverity.Warning, msg);
     public static void Error(string msg) => Write(LogSeverity.Error, msg);
 }
-
-internal enum LogSeverity
-{
-    Trace = 0,
-    Info = 1,
-    Warning = 2,
-    Error = 3,
-}

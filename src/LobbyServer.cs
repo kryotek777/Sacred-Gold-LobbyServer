@@ -9,20 +9,23 @@ internal static partial class LobbyServer
     private static readonly ReaderWriterLockSlim clientsLock = new(LockRecursionPolicy.SupportsRecursion);
     private static readonly List<SacredClient> clients = new();
     private static readonly List<Task> tasks = new();
+    private static readonly List<ServerInfo> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
-
-    public static BanList? BanList { get; private set; }
     
     public static Task Start()
     {
-        Config.Load();
+        // If the config fails to load for some reason, sane defaults are used
+        bool loadedDefaults = Config.Load(out var error);
 
+        // Initialize the log
         Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
 
-        var bannedClients = Config.Instance.BannedClients;
-        if(bannedClients != null)
-            BanList = new(bannedClients);
+        // Show the previous error
+        if(!loadedDefaults)
+            Log.Error(error!);
+
+        BuildSeparators();
 
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
@@ -84,12 +87,10 @@ internal static partial class LobbyServer
     {
         clientsLock.EnterReadLock();
 
-        var fakeServers = Config.Instance.FakeServers ?? Enumerable.Empty<ServerInfo>();
-
         var serverList = clients
             .Where(x => x.ClientType == ClientType.GameServer && x.ServerInfo != null)
             .Select(x => x.ServerInfo)
-            .Concat(fakeServers)
+            .Concat(separators)
             .Where(x => x != null)
             .ToList();
 
@@ -100,7 +101,7 @@ internal static partial class LobbyServer
 
     private static async void AcceptLoop()
     {
-        var listener = new TcpListener(IPAddress.Any, Config.Instance.LobbyPort);
+        var listener = new TcpListener(IPAddress.Any, Config.Instance.Port);
         listener.Start();
 
         Log.Info("Started accepting clients");
@@ -110,7 +111,7 @@ internal static partial class LobbyServer
             var socket = await listener.AcceptSocketAsync(cancellationTokenSource.Token);
             var remoteIp = (socket.RemoteEndPoint as IPEndPoint)!.Address;
 
-            if (BanList?.IsBanned(remoteIp, BanType.Full) == true)
+            if (Config.Instance.IsBanned(remoteIp, BanType.Full))
             {
                 socket.Close();
                 socket.Dispose();
@@ -121,5 +122,22 @@ internal static partial class LobbyServer
                 client.Start();
             }
         }
+    }
+
+    private static void BuildSeparators()
+    {
+        separators.AddRange(Config.Instance.ServerSeparators.Select((name, i) => new ServerInfo(
+            Name: name,
+            LocalIp: IPAddress.None,
+            ExternalIp: IPAddress.None,
+            Port: 0,
+            CurrentPlayers: 0,
+            MaxPlayers: 0,
+            Flags: 0,
+            ServerId: uint.MaxValue - (uint)i, // Give an Id that will never be used in practice
+            NetworkProtocolVersion: 0,
+            ClientGameVersion: 0,
+            ChannelId: 0
+        )));
     }
 }

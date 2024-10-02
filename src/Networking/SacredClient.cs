@@ -144,7 +144,7 @@ public class SacredClient
     #region OnSacred
     public void OnMessageOfTheDayRequest(ushort id)
     {
-        string text = "Message of the day!";
+        string text = Config.Instance.MessageOfTheDay;
         var motd = new MessageOfTheDay(id, text);
         connection.EnqueuePacket(SacredMsgType.SendMessageOfTheDay, motd.Serialize());
     }
@@ -227,7 +227,7 @@ public class SacredClient
 
     public void OnClientLoginRequest(LoginRequest loginRequest)
     {
-        if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
+        if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
         {
             Stop();
             return;
@@ -253,7 +253,7 @@ public class SacredClient
 
     private void OnServerLoginRequest(ServerInfo serverInfo)
     {
-        if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
+        if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
         {
             Stop();
             return;
@@ -408,21 +408,17 @@ public class SacredClient
 
     private void SendMotd()
     {
-        var motd = Config.Instance.MOTD;
+        var motd = Config.Instance.MessageOfTheDay;
 
         if (motd == null)
             return;
 
-        foreach (var line in motd)
-        {
-            if (line == null)
-                continue;
 
-            SendChatMessage(
-                from: string.Empty, //Red Text
-                message: line,      //MOTD line
-                senderId: 0        //From System
-            );
-        }
+        SendChatMessage(
+            from: string.Empty, //Red Text
+            message: motd,      //MOTD line
+            senderId: 0        //From System
+        );
+        
     }
 }
