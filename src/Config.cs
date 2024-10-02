@@ -23,6 +23,7 @@ public class Config
         LogPath = "./log.txt";
         LogLevel = LogSeverity.Info;
         MessageOfTheDay = "";
+        ChannelChatMessage = "";
         Bans = new();
         ServerSeparators = new();
     }
