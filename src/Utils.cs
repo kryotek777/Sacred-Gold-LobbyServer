@@ -117,6 +117,11 @@ internal static class Utils
         return buf;    
     }
 
+    public static string Utf16ToString(ReadOnlySpan<byte> data)
+    {
+        return Encoding.Unicode.GetString(data).Trim('\0');
+    }
+
     public static string TincatDecrypt(ReadOnlySpan<byte> data)
     {
         int num = 63;

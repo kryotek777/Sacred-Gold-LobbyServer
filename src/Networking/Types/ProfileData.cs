@@ -29,14 +29,14 @@ public record ProfileData(
         using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
 
         var Version = reader.ReadUInt16();
-        var Account = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Name = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Nick = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Clan = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Page = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Icq = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
-        var Text = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileTextLength));
-        var Email = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Account = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Name = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Nick = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Clan = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Page = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Icq = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+        var Text = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileTextLength));
+        var Email = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
         var PermId = reader.ReadInt32();
         var Slot = reader.ReadByte();
         var ShowEmail = reader.ReadBoolean();
