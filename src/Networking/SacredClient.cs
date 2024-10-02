@@ -122,6 +122,12 @@ public class SacredClient
                 OnChannelJoinRequest(request);
             }
             break;            
+            case SacredMsgType.MessageOfTheDayRequest:
+            {
+                var id = reader.ReadUInt16();
+                OnMessageOfTheDayRequest(id);
+            }
+            break;
             default:
             {
                 if (Enum.IsDefined(type))
@@ -136,6 +142,13 @@ public class SacredClient
     }
 
     #region OnSacred
+    public void OnMessageOfTheDayRequest(ushort id)
+    {
+        string text = "Message of the day!";
+        var motd = new MessageOfTheDay(id, text);
+        connection.EnqueuePacket(SacredMsgType.SendMessageOfTheDay, motd.Serialize());
+    }
+
     public void OnChannelJoinRequest(ChannelJoinRequest channelJoinRequest)
     {
         Log.Warning($"{GetPrintableName()} asked to join channel {channelJoinRequest.ChannelId}, but channels aren't implemented yet!");
