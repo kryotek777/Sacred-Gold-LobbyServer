@@ -103,6 +103,20 @@ internal static class Utils
         return Windows1252Encoding.GetBytes(str);
     }
 
+    public static byte[] StringToWin1252(string str, int length)
+    {
+        var buf = new byte[length];
+        Windows1252Encoding.GetBytes(str, buf);
+        return buf;
+    }
+
+    public static byte[] StringToUtf16(string str, int length)
+    {
+        var buf = new byte[length];
+        Encoding.Unicode.GetBytes(str, buf);
+        return buf;    
+    }
+
     public static string TincatDecrypt(ReadOnlySpan<byte> data)
     {
         int num = 63;
@@ -117,10 +131,10 @@ internal static class Utils
         return Win1252ToString(result);
     }
 
-    public static byte[] TincatEncrypt(string data)
+    public static byte[] TincatEncrypt(string data, int length)
     {
         int num = 63;
-        var result = new byte[data.Length];
+        var result = new byte[length];
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -130,18 +144,7 @@ internal static class Utils
 
         return result;
     }
-
-    public static T[] PadToSize<T>(this T[] array, int size)
-    {
-        if(size > array.Length)
-        {
-            var result = new T[size];
-            Array.Copy(array, result, array.Length);
-            return result;
-        }
-        else return array;
-    }
-
+    
     public static byte[] ZLibCompress(byte[] data)
     {
         using (var memoryStream = new MemoryStream())

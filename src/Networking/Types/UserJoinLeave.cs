@@ -21,7 +21,7 @@ public record UserJoinLeave(
         using var writer = new BinaryWriter(ms);
 
         writer.Write(PermId);
-        writer.Write(Utils.StringToWin1252(DisplayName).PadToSize(80));
+        writer.Write(Utils.StringToWin1252(DisplayName, Constants.UsernameMaxLength));
 
         return ms.ToArray();
     }

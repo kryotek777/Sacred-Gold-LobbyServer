@@ -38,7 +38,7 @@ public record LoginResult(
         writer.Write((int)Result);
         writer.Write(Ip.GetAddressBytes());
         writer.Write(PermId);
-        writer.Write(Utils.StringToWin1252(Message));
+        writer.Write(Utils.StringToWin1252(Message, 256));
 
         return ms.ToArray();
     }

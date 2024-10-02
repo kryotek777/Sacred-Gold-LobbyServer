@@ -58,21 +58,21 @@ public record ProfileData(
         using var writer = new BinaryWriter(ms);
 
         writer.Write(Version);
-        writer.Write(Encoding.Unicode.GetBytes(Account).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Name).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Nick).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Clan).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Page).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Icq).PadToSize(Constants.Utf16ProfileStringLength));
-        writer.Write(Encoding.Unicode.GetBytes(Text).PadToSize(Constants.Utf16ProfileTextLength));
-        writer.Write(Encoding.Unicode.GetBytes(Email).PadToSize(Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Account, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Name, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Nick, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Clan, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Page, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Icq, Constants.Utf16ProfileStringLength));
+        writer.Write(Utils.StringToUtf16(Text, Constants.Utf16ProfileTextLength));
+        writer.Write(Utils.StringToUtf16(Email, Constants.Utf16ProfileStringLength));
         writer.Write(PermId);
         writer.Write(Slot);
         writer.Write(ShowEmail);
 
         for (int i = 0; i < LobbyCharNames.Length; i++)
         {
-            writer.Write(Encoding.Unicode.GetBytes(LobbyCharNames[i]).PadToSize(Constants.Utf16ProfileStringLength));
+            writer.Write(Utils.StringToUtf16(LobbyCharNames[i], Constants.Utf16ProfileStringLength));
         }
 
         writer.Write(HeroPreviewData);

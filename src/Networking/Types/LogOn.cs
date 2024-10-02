@@ -28,8 +28,8 @@ public record LogOn(
     {
         writer.Write(Magic);
         writer.Write(ConnectionId);
-        writer.Write(Utils.StringToWin1252(Username).PadToSize(32));
-        writer.Write(Utils.StringToWin1252(Password).PadToSize(8));
+        writer.Write(Utils.StringToWin1252(Username, 32));
+        writer.Write(Utils.StringToWin1252(Password, 8));
         writer.Write(Unknown);
     }
 }

@@ -28,10 +28,10 @@ public record SacredChatMessage
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
 
-        writer.Write(Utils.StringToWin1252(SenderName).PadToSize(Constants.UsernameMaxLength));
+        writer.Write(Utils.StringToWin1252(SenderName, Constants.UsernameMaxLength));
         writer.Write(SenderPermId);
         writer.Write(DestinationPermId);
-        writer.Write(Utils.StringToWin1252(Message).PadToSize(Constants.ChatMessageMaxLength));
+        writer.Write(Utils.StringToWin1252(Message, Constants.ChatMessageMaxLength));
 
         return ms.ToArray();
     }

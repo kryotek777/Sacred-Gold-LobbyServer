@@ -48,7 +48,7 @@ public record ServerInfo(
         var LocalIp = this.LocalIp ?? IPAddress.None;
         var ExternalIp = this.LocalIp ?? IPAddress.None;
 
-        writer.Write(Utils.StringToWin1252(Name).PadToSize(Constants.UsernameMaxLength));
+        writer.Write(Utils.StringToWin1252(Name, Constants.UsernameMaxLength));
         writer.Write(LocalIp.GetAddressBytes());
         writer.Write(ExternalIp.GetAddressBytes());
         writer.Write(Port);

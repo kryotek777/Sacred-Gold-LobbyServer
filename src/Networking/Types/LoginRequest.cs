@@ -39,13 +39,13 @@ public record LoginRequest(
         using var ms = new MemoryStream();
         using var writer = new BinaryWriter(ms);
 
-        writer.Write(Utils.StringToWin1252(Username));
-        writer.Write(Utils.TincatEncrypt(Password));
-        writer.Write(Utils.TincatEncrypt(CdKey1));
+        writer.Write(Utils.StringToWin1252(Username, Constants.UsernameMaxLength));
+        writer.Write(Utils.TincatEncrypt(Password, Constants.PasswordMaxLength));
+        writer.Write(Utils.TincatEncrypt(CdKey1, Constants.CdKeyLength));
         writer.Write((byte)0); //Pad CDKeys to 21 bytes
         writer.Write(NetworkProtocolVersion);
         writer.Write(ClientGameVersion);
-        writer.Write(Utils.TincatEncrypt(CdKey2));
+        writer.Write(Utils.TincatEncrypt(CdKey2, Constants.CdKeyLength));
         writer.Write((byte)0); //Pad CDKeys to 21 bytes
 
         return ms.ToArray();
