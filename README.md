@@ -24,7 +24,7 @@ This reimplementation aims to recreate the functionality of the original lobby s
 ### Download the LobbyServer
 1. Download the latest release from the box on the right
 2. Extract the archive
-3. (Optionally) modify 'config.json' to suit your needs
+3. (Optionally) modify 'config.toml' to suit your needs
 
 ### Port forwarding
 The port 7066/tcp (unless modified in the config) needs to be port forwarded if hosting a lobbyserver over the internet
@@ -37,7 +37,7 @@ This needs to be done for every person that wants to host a game using GameServe
 Open the file GameServer.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:  
 
 `NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.json)
+`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.toml)
 
 Ports 2005/udp and 2006/tcp need to be port forwarded if hosting a gameserver over the internet
 
@@ -49,7 +49,7 @@ The gameserver should now connect to the lobbyserver!
 Open the file Settings.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:
 
 `NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.json)  
+`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.toml)  
 `NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC`<br>
 `NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9`
 
@@ -100,4 +100,6 @@ This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) f
 ## Acknowledgements
 
 Special thanks to Ascaron Entertainment for creating Sacred and inspiring this reimplementation!
+
+A really heartfelt thank you to the members of Sacred Tribute for their invaluable help and to all the members of the discord communities that helped testing, debugging and experimenting <3
 
