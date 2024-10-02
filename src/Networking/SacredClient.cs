@@ -247,8 +247,7 @@ public class SacredClient
         connection.EnqueuePacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
         SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
-        Log.Info($"Client logged in:\n{loginRequest}");
-        Log.Trace($"Answering with:\n{loginResult}");
+        Log.Info($"Client logged in: {loginRequest.Username}");
     }
 
     private void OnServerLoginRequest(ServerInfo serverInfo)
@@ -323,7 +322,7 @@ public class SacredClient
 
         LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendChatMessage, msg.Serialize());
 
-        Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
+        Log.Info($"{GetPrintableName()} says: {msg.Message}");
     }
     #endregion
 
@@ -401,6 +400,7 @@ public class SacredClient
 
     public void Kick()
     {
+        Log.Info($"Kicking {GetPrintableName}");
         SendPacket(SacredMsgType.Kick, ReadOnlySpan<byte>.Empty);
     }
 
@@ -419,7 +419,5 @@ public class SacredClient
                 senderId: 0             //From System (red text)
             );        
         }
-
-        
     }
 }
