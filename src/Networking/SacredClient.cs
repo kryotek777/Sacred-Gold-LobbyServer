@@ -309,11 +309,7 @@ public class SacredClient
 
     public void OnClientCharacterSelect(ushort blockId)
     {
-        //Send the MOTD
-        SendMotd();
-
         hasSelectedCharacter = true;
-
     }
 
     private void OnClientChatMessage(SacredChatMessage message)
@@ -351,6 +347,8 @@ public class SacredClient
     public void JoinRoom(int roomNumber)
     {
         SendPacket(SacredMsgType.ClientJoinChannel, BitConverter.GetBytes(roomNumber));
+
+        SendChannelChatMessage();
 
         string myName;
         lock(_lock)
@@ -406,19 +404,22 @@ public class SacredClient
         SendPacket(SacredMsgType.Kick, ReadOnlySpan<byte>.Empty);
     }
 
-    private void SendMotd()
+    private void SendChannelChatMessage()
     {
-        var motd = Config.Instance.MessageOfTheDay;
+        var message = Config.Instance.ChannelChatMessage;
 
-        if (motd == null)
-            return;
+        //Split the message into multiple lines to avoid cutoffs
+        var lines = message.Split('\n');
 
+        foreach (var line in lines)
+        {
+            SendChatMessage(
+                from: string.Empty,     //No sender name
+                message: line,          //Message
+                senderId: 0             //From System (red text)
+            );        
+        }
 
-        SendChatMessage(
-            from: string.Empty, //Red Text
-            message: motd,      //MOTD line
-            senderId: 0        //From System
-        );
         
     }
 }

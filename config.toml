@@ -17,8 +17,18 @@ LogLevel = "Info"
 # A message that will appear in a popoup the first time a client joins the lobby after starting the game.
 
 MessageOfTheDay = '''
-    Welcome player,
-    thanks for playing with us!
+Welcome player,
+thanks for playing with us!
+'''
+
+# A message that will appear in the chat when the client joins a channel
+# If you're hosting a public lobby, you're kindly asked to 
+# keep at least a link to the original project
+# Thank you <3
+
+ChannelChatMessage = '''
+Unofficial LobbyServer reimplementation by \cFF00FFFFKryotek
+Source: \cFFAA55FFhttps://github.com/kryotek777/Sacred-Gold-LobbyServer
 '''
 
 # Fake servers that will be sent in the server list to act as separators.

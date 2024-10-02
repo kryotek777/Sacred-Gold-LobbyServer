@@ -12,11 +12,9 @@ public class Config
     public int Port { get; set; }
     public string LogPath { get; set; }
     public LogSeverity LogLevel { get; set; }
-
     public string MessageOfTheDay { get; set; }
-
+    public string ChannelChatMessage { get; set; }
     public List<Ban> Bans { get; set; }
-
     public List<string> ServerSeparators { get; set; }
 
     public Config()
