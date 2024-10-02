@@ -1,7 +1,5 @@
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using Sacred.Networking.Types;
 
 namespace Sacred.Networking;
@@ -35,11 +33,19 @@ public class SacredClient
 
     public void Stop()
     {
-        LobbyServer.ForEachClient(x =>
+        if(ClientType == ClientType.GameClient)
         {
-            if (x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
-                x.UserLeavedRoom(ConnectionId);
-        });
+            LobbyServer.ForEachClient(x =>
+            {
+                if (x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
+                    x.UserLeavedRoom(ConnectionId);
+            });       
+        }
+        else if(ClientType == ClientType.GameServer)
+        {
+            OnServerLogout();
+        }
+
 
         connection.Stop();
 
@@ -136,6 +142,11 @@ public class SacredClient
                 OnUserJoinedServer(permId);
             }
             break;
+            case SacredMsgType.ServerLogout:
+            {
+                OnServerLogout();
+            }
+            break;
             default:
             {
                 if (Enum.IsDefined(type))
@@ -150,6 +161,15 @@ public class SacredClient
     }
 
     #region OnSacred
+    public void OnServerLogout()
+    {
+        LobbyServer.ForEachClient(x => 
+        {
+            if(x.ClientType == ClientType.GameClient)
+                x.RemoveServer(ServerInfo!);
+        });
+    }
+
     public void OnUserJoinedServer(uint permId)
     {
         LobbyServer.ForEachClient(x =>
@@ -419,6 +439,11 @@ public class SacredClient
     {
         Log.Info($"Kicking {GetPrintableName}");
         SendPacket(SacredMsgType.Kick, ReadOnlySpan<byte>.Empty);
+    }
+
+    public void RemoveServer(ServerInfo serverInfo)
+    {
+        connection.EnqueuePacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
     }
 
     private void SendChannelChatMessage()
