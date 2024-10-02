@@ -69,6 +69,9 @@ public class SacredConnection
         ReadTask = null;
         WriteTask = null;
         Started = false;
+
+        socket.SendTimeout = 60000;
+        socket.ReceiveTimeout = 60000;
     }
 
     public void Start()
@@ -83,12 +86,12 @@ public class SacredConnection
     {
         if(Started)
         {
+            Started = false;
             CancellationTokenSource.Cancel();
+            Client.Stop();
             Task.WaitAll(ReadTask, WriteTask);
             ReadTask = null;
             WriteTask = null;
-            Started = false;
-            Client.Stop();
         }
     }
 
@@ -119,6 +122,18 @@ public class SacredConnection
                 };
             }
         }
+        catch (TimeoutException)
+        {
+
+        }
+        catch (EndOfStreamException)
+        {
+            Stop();
+        }
+        catch (IOException)
+        {
+            Stop();
+        }
         catch (Exception ex)
         {
             Log.Error($"Exception while reading packet: {ex}");
@@ -135,6 +150,18 @@ public class SacredConnection
                 var (type, data) = SendQueue.Take();
                 SendSacredPacket(type, data);
             }
+        }
+        catch (TimeoutException)
+        {
+
+        }
+        catch (EndOfStreamException)
+        {
+            Stop();
+        }
+        catch (IOException)
+        {
+            Stop();
         }
         catch (Exception ex)
         {
