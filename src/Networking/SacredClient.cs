@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using Sacred.Networking.Types;
 
@@ -8,7 +9,7 @@ namespace Sacred.Networking;
 public class SacredClient
 {
     public object _lock = new();
-    public ClientType ClientType { get; private set; }
+    public ClientType ClientType => connection.ClientType;
     public uint ConnectionId { get; private set; }
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfo? ServerInfo { get; private set; }
@@ -18,21 +19,10 @@ public class SacredClient
     public int SelectedBlock { get; set; }
 
     private SacredConnection connection;
-    private CancellationTokenSource cancellationTokenSource;
-    private Task? readTask;
-    private Task? writeTask;
-    private BlockingCollection<TincatPacket> sendQueue;
-
-    public SacredClient(SacredConnection connection, uint connectionId)
+    public SacredClient(Socket socket, uint connectionId)
     {
-        ArgumentNullException.ThrowIfNull(connection);
-
-        this.connection = connection;
+        connection = new SacredConnection(this, socket, connectionId);
         ConnectionId = connectionId;
-        cancellationTokenSource = new();
-        readTask = null;
-        writeTask = null;
-        sendQueue = new(new ConcurrentQueue<TincatPacket>());
         ServerInfo = null;
         Profile = ProfileData.CreateEmpty((int)ConnectionId);
     }
@@ -40,20 +30,7 @@ public class SacredClient
     public void Start()
     {
         LobbyServer.AddClient(this);
-
-        readTask = Task.Factory.StartNew(
-            ReadLoop,
-            cancellationTokenSource.Token,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default
-        );
-
-        writeTask = Task.Factory.StartNew(
-            WriteLoop,
-            cancellationTokenSource.Token,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default
-        );
+        connection.Start();
     }
 
     public void Stop()
@@ -64,12 +41,10 @@ public class SacredClient
                 x.UserLeavedRoom(ConnectionId);
         });
 
-        cancellationTokenSource.Cancel();
+        connection.Stop();
 
         LobbyServer.RemoveClient(this);
     }
-
-    public void SendPacket(TincatPacket packet) => sendQueue.Add(packet);
 
     public string GetPrintableName()
     {
@@ -81,277 +56,95 @@ public class SacredClient
             return $"#{ConnectionId} {RemoteEndPoint}";
     }    
 
-    private void ReadLoop()
-    {
-        while (!cancellationTokenSource.IsCancellationRequested && connection.IsConnected)
-        {
-            try
-            {
-                if (connection.TryReadPacket(out var packet, out var error))
-                {
-                    DispatchPacket(packet!);
-                }
-                else
-                {
-                    var message = error switch
-                    {
-                        PacketError.WrongMagic => $"Wrong Magic",
-                        PacketError.WrongChecksum => $"Checksum Mismatch",
-                        _ => $"Unknown"
-                    };
-
-                    Log.Error($"Error while reading packet from {GetPrintableName()}: {message}");
-                }
-            }
-            catch (EndOfStreamException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Unhandled error while reading packet from {GetPrintableName()}: {ex.Message}");
-                Log.Trace(ex.ToString());
-            }
-        }
-
-        Stop();
-    }
-
-    private void WriteLoop()
-    {
-        while (!cancellationTokenSource.IsCancellationRequested && connection.IsConnected)
-        {
-            try
-            {
-                var packet = sendQueue.Take();
-                connection.SendPacket(packet);
-            }
-            catch (EndOfStreamException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Unhandled error while writing packet to {GetPrintableName()}: {ex.Message}");
-                Log.Trace(ex.ToString());
-            }
-        }
-
-        Stop();
-    }
-
-    private void DispatchPacket(TincatPacket packet)
-    {
-        try
-        {
-            switch (packet.Header.Type)
-            {
-                case TincatMsgType.TIMESYNC:
-                    OnTincatTimeSync(packet);
-                    break;
-                case TincatMsgType.CUSTOMDATA:
-                    OnTincatCustomData(packet);
-                    break;
-                case TincatMsgType.LOGMEON:
-                    OnTincatLogMeOn(packet);
-                    break;
-                case TincatMsgType.LOGMEOFF:
-                    OnTincatLogMeOff(packet);
-                    break;
-                case TincatMsgType.LOGONACCEPTED:
-                    OnTincatLogOnAccepted(packet);
-                    break;
-                case TincatMsgType.LOGOFFACCEPTED:
-                    OnTincatLogOffAccepted(packet);
-                    break;
-                case TincatMsgType.STAYINGALIVE:
-                    OnTincatStayingAlive(packet);
-                    break;
-                default:
-                    Log.Error($"Unimplemented tincat message {(int)packet.Header.Type}");
-                    break;
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"Unhandled error while processing packet from {GetPrintableName()}: {ex.Message}");
-            Log.Trace(ex.ToString());
-        }
-    }
-
-    private void SendPacket(TincatHeader header, ReadOnlySpan<byte> payload)
-    {
-        SendPacket(new TincatPacket(header, payload.ToArray()));
-    }
-
-    private void SendPacket(TincatMsgType msgType, ReadOnlySpan<byte> payload)
-    {
-        SendPacket(MakePacket(msgType, payload));
-    }
-
     public void SendPacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
     {
-        SendPacket(MakePacket(msgType, payload));
+        connection.EnqueuePacket(msgType, payload.ToArray());
     }
 
-    private TincatPacket MakePacket(TincatMsgType msgType, ReadOnlySpan<byte> payload)
+    public void ReceivePacket(SacredMsgType type, ReadOnlySpan<byte> payload)
     {
-        var header = new TincatHeader(
-            TincatHeader.ServerId,
-            ConnectionId,
-            msgType,
-            payload.Length,
-            CRC32.Compute(payload)
-        );
+        var reader = new SpanReader(payload);
 
-        return new TincatPacket(header, payload.ToArray());
-    }
-
-    private TincatPacket MakePacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
-    {
-        Span<byte> sacredData = stackalloc byte[SacredHeader.DataSize + payload.Length];
-
-        //FIXME: Explain this stuff...
-        var sacredHeader = new SacredHeader(msgType, payload.Length + SacredHeader.DataSize - 4);
-        sacredHeader.Unknown1 = 0xDDCCBB00 + (uint)msgType;
-
-        var headerData = sacredHeader.ToArray();
-
-        for (int i = 0; i < headerData.Length; i++)
-            sacredData[i] = headerData[i];
-
-        for (int i = 0; i < payload.Length; i++)
-            sacredData[i + headerData.Length] = payload[i];
-
-        return MakePacket(TincatMsgType.CUSTOMDATA, sacredData);
-    }
-
-    #region OnTincat
-
-    private void OnTincatTimeSync(TincatPacket packet)
-    {
-        Log.Error($"Unimplemented function {nameof(OnTincatTimeSync)}");
-    }
-
-    private void OnTincatCustomData(TincatPacket packet)
-    {
-        packet.Deconstruct(out var tincatHeader, out var tincatPayload);
-
-        var sacredHeader = new SacredHeader(tincatPayload.AsSpan(0, SacredHeader.DataSize));
-        var sacredPayload = tincatPayload.AsSpan(SacredHeader.DataSize);
-
-        //Reply positively to every packet
-        SendLobbyResult(LobbyResults.Ok, sacredHeader.Type1);
-
-        switch (sacredHeader.Type1)
+        switch (type)
         {
             case SacredMsgType.ClientLoginRequest:
-                OnClientLoginRequest(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var request = LoginRequest.Deserialize(payload);
+                OnClientLoginRequest(request);
+            }
+            break;
+
             case SacredMsgType.ServerLoginRequest:
-                OnServerLoginRequest(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var serverInfo = ServerInfo.Deserialize(payload);
+                OnServerLoginRequest(serverInfo);    
+            }
+            break;
             case SacredMsgType.ServerChangePublicInfo:
-                OnServerChangePublicInfo(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var serverInfo = ServerInfo.Deserialize(payload);
+                OnServerChangePublicInfo(serverInfo);    
+            }
+            break;
             case SacredMsgType.ClientCharacterSelect:
-                OnClientCharacterSelect(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var blockId = reader.ReadUInt16();
+                OnClientCharacterSelect(blockId);
+            }
+            break;
             case SacredMsgType.ReceiveChatMessage:
-                OnClientChatMessage(tincatHeader, sacredHeader, sacredPayload);
-                break;
-            case SacredMsgType.ClientLoginResult:
-                OnAcceptClientLogin(tincatHeader, sacredHeader, sacredPayload);
-                break;
-            case SacredMsgType.LobbyResult:
-                OnLobbyResult(tincatHeader, sacredHeader, sacredPayload);
-                break;
-            case SacredMsgType.ServerLoginResult:
-                OnServerStartInfo(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var message = SacredChatMessage.Deserialize(payload);
+                OnClientChatMessage(message);
+            }
+            break;
             case SacredMsgType.ReceivePublicData:
-                OnReceivePublicData(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var data = PublicData.Deserialize(payload);
+                OnReceivePublicData(data);
+            }
+            break;
             case SacredMsgType.PublicDataRequest:
-                OnPublicDataRequest(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var request = PublicDataRequest.Deserialize(payload);
+                OnPublicDataRequest(request);
+            }
+            break;
             case SacredMsgType.ServerListRequest:
-                OnServerListRequest(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var request = ServerListRequest.Deserialize(payload);
+                OnServerListRequest(request);
+            }
+            break;
             case SacredMsgType.ChannelJoinRequest:
-                OnChannelJoinRequest(tincatHeader, sacredHeader, sacredPayload);
-                break;
+            {
+                var request = ChannelJoinRequest.Deserialize(payload);
+                OnChannelJoinRequest(request);
+            }
+            break;            
             default:
-                Log.Error($"Unimplemented Sacred message {(int)sacredHeader.Type1} from {GetPrintableName()}");
-                Log.Trace(FormatPacket(tincatHeader, sacredHeader, sacredPayload));
-                break;
+            {
+                if (Enum.IsDefined(type))
+                    Log.Error($"Unimplemented packet {type}");
+                else
+                    Log.Error($"Unknown packet {(int)type}");
+            }
+            break;
         }
 
-
+        SendLobbyResult(LobbyResults.Ok, type);
     }
-
-    private void OnTincatLogMeOn(TincatPacket packet)
-    {
-        var logOnData = LogOn.Deserialize(packet.Payload);
-
-        Log.Trace($"Got TincatLogMeOn from {GetPrintableName()}\n{logOnData}");
-
-        if (
-            logOnData.Magic == LogOn.LogOnMagic &&
-            logOnData.ConnectionId == LogOn.LogOnConnId &&
-            logOnData.Username == "user" &&
-            logOnData.Password == "passwor"
-        )
-        {
-            var response = new LogOn(ConnectionId);
-            SendPacket(TincatMsgType.LOGONACCEPTED, response.Serialize());
-
-            Log.Trace($"{GetPrintableName()} Logged at tincat level\n{response}");
-        }
-        else
-        {
-            Log.Error($"Wrong connection Id during Tincat LogMeOn from {GetPrintableName()}");
-
-            var response = new LogOn(uint.MaxValue);
-        }
-    }
-
-    private void OnTincatLogMeOff(TincatPacket packet)
-    {
-        Log.Error($"Unimplemented function {nameof(OnTincatLogMeOff)}");
-    }
-
-    private void OnTincatLogOnAccepted(TincatPacket packet)
-    {
-        Log.Error($"Unimplemented function {nameof(OnTincatLogOnAccepted)}");
-    }
-
-    private void OnTincatLogOffAccepted(TincatPacket packet)
-    {
-        Log.Error($"Unimplemented function {nameof(OnTincatLogOffAccepted)}");
-    }
-
-    private void OnTincatStayingAlive(TincatPacket packet)
-    {
-
-    }
-
-    #endregion
 
     #region OnSacred
-    private void OnChannelJoinRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    public void OnChannelJoinRequest(ChannelJoinRequest channelJoinRequest)
     {
-        var channelJoinRequest = ChannelJoinRequest.Deserialize(payload);
-
         Log.Warning($"{GetPrintableName()} asked to join channel {channelJoinRequest.ChannelId}, but channels aren't implemented yet!");
 
         JoinRoom(0);
     }
 
-    private void OnServerListRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnServerListRequest(ServerListRequest serverListRequest)
     {
-        var serverListRequest = ServerListRequest.Deserialize(payload);
-
         var id = serverListRequest.ChannelId;
 
         Log.Warning($"{GetPrintableName()} requested the server list for channel {id}, but channels aren't implemented yet!");
@@ -359,10 +152,8 @@ public class SacredClient
         SendServerList();
     }
 
-    private void OnPublicDataRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnPublicDataRequest(PublicDataRequest request)
     {
-        var request = PublicDataRequest.Deserialize(payload);
-
         if(request.BlockId == Constants.ProfileBlockId)
         {          
             var client = LobbyServer.GetClientFromPermId(request.PermId);
@@ -398,16 +189,14 @@ public class SacredClient
     }
 
 
-    private void OnReceivePublicData(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnReceivePublicData(PublicData publicData)
     {
-        var pubData = PublicData.Deserialize(payload);
-
         //The lobby received the client's profile data
-        if(pubData.PermId == (int)ConnectionId && pubData.BlockId == Constants.ProfileBlockId)
+        if(publicData.PermId == (int)ConnectionId && publicData.BlockId == Constants.ProfileBlockId)
         {
             lock(_lock)
             {
-                Profile = pubData.ReadProfileData();
+                Profile = publicData.ReadProfileData();
             }
 
             //Accept the changes
@@ -422,7 +211,8 @@ public class SacredClient
         }
     }
 
-    private void OnClientLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+
+    public void OnClientLoginRequest(LoginRequest loginRequest)
     {
         if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
         {
@@ -430,9 +220,7 @@ public class SacredClient
             return;
         }   
 
-        ClientType = ClientType.GameClient;
-
-        var loginRequest = LoginRequest.Deserialize(payload);
+        connection.ClientType = ClientType.GameClient;
 
         clientName = loginRequest.Username;
 
@@ -443,13 +231,14 @@ public class SacredClient
             Message: "Welcome!"
         );
 
-        SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+        connection.EnqueuePacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+        SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
         Log.Info($"Client logged in:\n{loginRequest}");
         Log.Trace($"Answering with:\n{loginResult}");
     }
 
-    private void OnServerLoginRequest(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnServerLoginRequest(ServerInfo serverInfo)
     {
         if(LobbyServer.BanList?.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
         {
@@ -457,10 +246,8 @@ public class SacredClient
             return;
         }  
         //We now know that a GameServer is connecting
-        ClientType = ClientType.GameServer;
+        connection.ClientType = ClientType.GameServer;
 
-        //Save the server's information
-        ServerInfo = ServerInfo.Deserialize(payload);
 
         //Resolve the external IP of the server
         IPAddress externalIP;
@@ -474,8 +261,8 @@ public class SacredClient
             externalIP = RemoteEndPoint.Address;
         }
 
-        //Correct the server's info
-        ServerInfo = ServerInfo with
+        //Correct the server's info and save it
+        ServerInfo = serverInfo with
         {
             ExternalIp = externalIP,
             ServerId = ConnectionId,
@@ -486,18 +273,15 @@ public class SacredClient
         SendPacket(SacredMsgType.ServerLoginResult, externalIP.GetAddressBytes());
 
         //Broadcast the new server to all clients
-        var packet = MakePacket(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
-        LobbyServer.SendPacketToAllGameClients(packet);
+        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
 
         //Done
         Log.Info($"{GetPrintableName()} connected as a GameServer with name '{ServerInfo.Name}'");
         Log.Trace(ServerInfo.ToString());
     }
 
-    private void OnServerChangePublicInfo(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnServerChangePublicInfo(ServerInfo newInfo)
     {
-        var newInfo = ServerInfo.Deserialize(payload);
-
         ServerInfo = ServerInfo! with
         {
             Flags = newInfo.Flags,
@@ -507,11 +291,10 @@ public class SacredClient
 
         Log.Info($"GameServer {GetPrintableName()} changed public info");
 
-        var packet = MakePacket(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
-        LobbyServer.SendPacketToAllGameClients(packet);
-
+        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
     }
-    private void OnClientCharacterSelect(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+
+    public void OnClientCharacterSelect(ushort blockId)
     {
         //Send the MOTD
         SendMotd();
@@ -520,39 +303,26 @@ public class SacredClient
 
     }
 
-    private void OnClientChatMessage(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
+    private void OnClientChatMessage(SacredChatMessage message)
     {
         //Ensure sender's parameters to prevent spoofing
-        var msg = SacredChatMessage.Deserialize(payload) with
+        var msg = message with
         {
             SenderName = clientName ?? "<unknown>",
             SenderPermId = (int)ConnectionId
         };
 
-        LobbyServer.SendPacketToAllGameClients(MakePacket(SacredMsgType.SendChatMessage, msg.Serialize()));
+        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendChatMessage, msg.Serialize());
 
         Log.Trace($"ChatMsg from {GetPrintableName()}: {msg.Message}");
     }
-    private void OnAcceptClientLogin(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
-    {
-        Log.Error($"Unimplemented function {nameof(OnAcceptClientLogin)}");
-    }
-    private void OnLobbyResult(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
-    {
-        Log.Error($"Unimplemented function {nameof(OnLobbyResult)}");
-    }
-    private void OnServerStartInfo(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
-    {
-        Log.Error($"Unimplemented function {nameof(OnServerStartInfo)}");
-    }
-
     #endregion
 
     public void SendChatMessage(string from, string message, int senderId) => SendChatMessage(new SacredChatMessage(from, senderId, (int)ConnectionId, message));
 
     public void SendChatMessage(SacredChatMessage message)
     {
-        SendPacket(MakePacket(SacredMsgType.SendChatMessage, message.Serialize()));
+        SendPacket(SacredMsgType.SendChatMessage, message.Serialize());
     }
 
     public void SendServerList()
@@ -641,19 +411,5 @@ public class SacredClient
                 senderId: 0        //From System
             );
         }
-    }
-
-    private string FormatPacket(TincatHeader tincatHeader, SacredHeader sacredHeader, ReadOnlySpan<byte> payload)
-    {
-        var sb = new StringBuilder();
-
-        sb.AppendLine("---Tincat Header---");
-        sb.AppendLine(tincatHeader.ToString());
-        sb.AppendLine("---Sacred Header---");
-        sb.AppendLine(sacredHeader.ToString());
-        sb.AppendLine("---Payload Data---");
-        Utils.FormatBytes(payload, sb);
-
-        return sb.ToString();
     }
 }

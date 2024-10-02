@@ -52,22 +52,12 @@ internal static partial class LobbyServer
         Log.Info($"Client removed {client.GetPrintableName()}");
     }
 
-    public static void SendPacketToAllGameClients(TincatPacket packet)
+    public static void SendPacketToAllGameClients(SacredMsgType type, byte[] payload)
     {
         clientsLock.EnterReadLock();
         foreach (var client in clients.Where(x => x.ClientType == ClientType.GameClient))
         {
-            client.SendPacket(packet);
-        }
-        clientsLock.ExitReadLock();
-    }
-
-    public static void SendPacketToAllGameServers(TincatPacket packet)
-    {
-        clientsLock.EnterReadLock();
-        foreach (var client in clients.Where(x => x.ClientType == ClientType.GameServer))
-        {
-            client.SendPacket(packet);
+            client.SendPacket(type, payload);
         }
         clientsLock.ExitReadLock();
     }
@@ -127,8 +117,7 @@ internal static partial class LobbyServer
             }
             else
             {
-                var connection = new SacredConnection(socket);
-                var client = new SacredClient(connection, ++connectionIdCounter);
+                var client = new SacredClient(socket, ++connectionIdCounter);
                 client.Start();
             }
         }

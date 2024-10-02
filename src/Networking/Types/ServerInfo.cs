@@ -1,7 +1,4 @@
 using System.Net;
-using System.Runtime.InteropServices;
-using System.Text;
-using Sacred.Networking.Structs;
 
 namespace Sacred.Networking.Types;
 

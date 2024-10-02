@@ -4,5 +4,11 @@ public enum PacketError
 {
     None,
     WrongMagic,
-    WrongChecksum
+    WrongChecksum,
+    PacketUnexpected,
+    WrongModuleId,
+    SecurityTypeMismatch,
+    SecurityWrongKey,
+    SecurityNotAllowed,
+    SecurityLengthMismatch
 }
