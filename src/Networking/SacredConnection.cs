@@ -76,6 +76,7 @@ public class SacredConnection
         var token = CancellationTokenSource.Token;
         ReadTask = Utils.RunTask(() => ReadLoop(token), token);
         WriteTask = Utils.RunTask(() => WriteLoop(token), token);
+        Started = true;
     }
 
     public void Stop()
@@ -87,6 +88,7 @@ public class SacredConnection
             ReadTask = null;
             WriteTask = null;
             Started = false;
+            Client.Stop();
         }
     }
 
