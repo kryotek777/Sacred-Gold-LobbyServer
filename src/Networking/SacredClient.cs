@@ -128,6 +128,14 @@ public class SacredClient
                 OnMessageOfTheDayRequest(id);
             }
             break;
+            case SacredMsgType.UserJoinedServer:
+            {
+                var permId = reader.ReadUInt32();
+                var blockId = reader.ReadUInt16();
+
+                OnUserJoinedServer(permId);
+            }
+            break;
             default:
             {
                 if (Enum.IsDefined(type))
@@ -142,6 +150,15 @@ public class SacredClient
     }
 
     #region OnSacred
+    public void OnUserJoinedServer(uint permId)
+    {
+        LobbyServer.ForEachClient(x =>
+        {
+            if (x.ClientType == ClientType.GameClient)
+                x.UserLeavedRoom(permId);
+        });
+    }
+
     public void OnMessageOfTheDayRequest(ushort id)
     {
         string text = Config.Instance.MessageOfTheDay;
