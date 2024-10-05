@@ -5,6 +5,7 @@
 
 # Lobbyserver specific
 log.txt
+notes.txt
 
 # User-specific files
 *.rsuser
