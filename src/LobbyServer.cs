@@ -51,22 +51,6 @@ internal static partial class LobbyServer
         Log.Info($"Client removed {client.GetPrintableName()}");
     }
 
-    public static void SendPacketToAllGameClients(SacredMsgType type, byte[] payload)
-    {
-        foreach (var client in Users)
-        {
-            client.SendPacket(type, payload);
-        }
-    }
-
-    public static void ForEachClient(Action<SacredClient> action)
-    {
-        foreach (var client in Clients)
-        {
-            action(client);
-        }
-    }
-
     public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == x.PermId);
 
     public static List<ServerInfo> GetAllServerInfos()
@@ -81,10 +65,50 @@ internal static partial class LobbyServer
         return serverList!;
     }
 
+    public static void BroadcastProfile(ProfileData profile)
+    {
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel)
+                user.SendProfileData(profile);
+        }    
+    }
+
+    public static void BroadcastServerInfo(ServerInfo info)
+    {
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel)
+                user.UpdateServerInfo(info);
+        }    
+    }
+
+    public static void RemoveServer(ServerInfo info)
+    {
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel)
+                user.RemoveServer(info);
+        }    
+    }
+
+    /// <summary>
+    /// Sends a chat message to everyone but the sender
+    /// </summary>
+    /// <param name="chatMessage">The message to broadcast</param>
+    public static void BroadcastChatMessage(SacredChatMessage chatMessage)
+    {
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel && user.PermId != chatMessage.SenderPermId)
+                user.SendChatMessage(chatMessage with { DestinationPermId = user.PermId });
+        }
+    }
+
     /// <summary>
     /// Notifies other clients that a user has joined a channel and sends them the user list
     /// </summary>
-    /// <param name="joining"></param>
+    /// <param name="joining">The user that's joining the channel</param>
     public static void UserJoinedChannel(SacredClient joining)
     {
         lock(joining._lock)
@@ -110,7 +134,7 @@ internal static partial class LobbyServer
     /// <summary>
     /// Notifies other clients that a user has left the channel
     /// </summary>
-    /// <param name="permId"></param>
+    /// <param name="leaving">The user that's leaving the channel</param>
     public static void UserLeftChannel(SacredClient leaving)
     {
         foreach (var user in Users)

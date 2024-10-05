@@ -167,14 +167,8 @@ public class SacredClient
 
     public void OnServerLogout()
     {
-        LobbyServer.ForEachClient(x => 
-        {
-            lock(_lock)
-            {
-                if(x.ClientType == ClientType.GameClient)
-                    x.RemoveServer(ServerInfo!);
-            }
-        });
+        lock(_lock)
+            LobbyServer.RemoveServer(ServerInfo!);
     }
 
     public void OnUserJoinedServer(uint permId)
@@ -259,7 +253,7 @@ public class SacredClient
             if(IsInChannel)
             {
                 lock(_lock)
-                    LobbyServer.ForEachClient(x => x.SendProfileData(Profile));
+                    LobbyServer.BroadcastProfile(Profile);
             }
         }
     }
@@ -288,7 +282,7 @@ public class SacredClient
             Message: "Welcome!"
         );
 
-        connection.EnqueuePacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+        SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
         SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
         Log.Info($"{GetPrintableName()} logged in as an user!");
@@ -334,7 +328,7 @@ public class SacredClient
             };
 
             //Broadcast the new server to all clients
-            LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+            LobbyServer.BroadcastServerInfo(ServerInfo);
 
             //Done
             Log.Info($"{GetPrintableName()} logged in as a server!");
@@ -354,7 +348,7 @@ public class SacredClient
                 CurrentPlayers = newInfo.CurrentPlayers
             };
 
-            LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+            LobbyServer.BroadcastServerInfo(ServerInfo);
             
             Log.Info($"GameServer {GetPrintableName()} changed public info {ServerInfo.CurrentPlayers}/{ServerInfo.MaxPlayers} {ServerInfo.Flags}");
         }
@@ -374,7 +368,7 @@ public class SacredClient
             SenderPermId = PermId
         };
 
-        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendChatMessage, msg.Serialize());
+        LobbyServer.BroadcastChatMessage(msg);
 
         Log.Info($"{GetPrintableName()} says: {msg.Message}");
     }
@@ -440,8 +434,11 @@ public class SacredClient
         SendPacket(SacredMsgType.Kick, Array.Empty<byte>());
     }
 
+    public void UpdateServerInfo(ServerInfo serverInfo) => SendPacket(SacredMsgType.ServerChangePublicInfo, serverInfo.Serialize());
+
     public void RemoveServer(ServerInfo serverInfo)
     {
+        // I thought it was SacredMsgType.RemoveServer, but that doesn't work for some reason
         SendPacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
     }
 
