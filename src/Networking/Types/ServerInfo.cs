@@ -14,7 +14,7 @@ public record ServerInfo(
     int Port,
     short CurrentPlayers,
     short MaxPlayers,
-    int Flags,
+    ServerFlags Flags,
     uint ServerId,
     uint NetworkProtocolVersion,
     uint ClientGameVersion,
@@ -31,7 +31,7 @@ public record ServerInfo(
         var Port = reader.ReadInt32();
         var CurrentPlayers = reader.ReadInt16();
         var MaxPlayers = reader.ReadInt16();
-        var Flags = reader.ReadInt32();
+        var Flags = (ServerFlags)reader.ReadInt32();
         var ServerId = reader.ReadUInt32();
         var NetworkProtocolVersion = reader.ReadUInt32();
         var ClientGameVersion = reader.ReadUInt32();
@@ -54,7 +54,7 @@ public record ServerInfo(
         writer.Write(Port);
         writer.Write(CurrentPlayers);
         writer.Write(MaxPlayers);
-        writer.Write(Flags);
+        writer.Write((int)Flags);
         writer.Write(ServerId);
         writer.Write(NetworkProtocolVersion);
         writer.Write(ClientGameVersion);
