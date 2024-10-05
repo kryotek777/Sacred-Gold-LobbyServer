@@ -31,6 +31,7 @@ public class SacredClient
 
     public void Start()
     {
+        Log.Info($"{GetPrintableName()} just connected");
         connection.Start();
     }
 
@@ -51,15 +52,12 @@ public class SacredClient
         LobbyServer.RemoveClient(this);
     }
 
-    public string GetPrintableName()
+    public string GetPrintableName() => ClientType switch
     {
-        if(ClientType == ClientType.GameClient)
-        {
-            return $"{clientName} #{ConnectionId} {RemoteEndPoint}";
-        }
-        else 
-            return $"#{ConnectionId} {RemoteEndPoint}";
-    }    
+        ClientType.GameClient => $"{clientName}#{ConnectionId}",
+        ClientType.GameServer => $"{ServerInfo?.Name}#{ConnectionId}",
+        _ => $"{RemoteEndPoint}#{ConnectionId}",
+    };
 
     public void SendPacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
     {
@@ -272,10 +270,14 @@ public class SacredClient
     {
         if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
         {
+            Log.Info($"{GetPrintableName()} tried to log in as an user but was refused because it's banned");
             Stop();
             return;
-        }   
+        }
 
+        Log.Trace($"{GetPrintableName()} logs in as user {loginRequest}");
+
+        //We now know that a User is connecting
         connection.ClientType = ClientType.GameClient;
 
         clientName = loginRequest.Username;
@@ -290,19 +292,22 @@ public class SacredClient
         connection.EnqueuePacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
         SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
-        Log.Info($"Client logged in: {loginRequest.Username}");
+        Log.Info($"{GetPrintableName()} logged in as an user!");
     }
 
     private void OnServerLoginRequest(ServerInfo serverInfo)
     {
         if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
         {
+            Log.Info($"{GetPrintableName()} tried to log in as a server but was refused because it's banned");
             Stop();
             return;
         }  
+
+        Log.Trace($"{GetPrintableName()} logs in as server");
+
         //We now know that a GameServer is connecting
         connection.ClientType = ClientType.GameServer;
-
 
         //Resolve the external IP of the server
         IPAddress externalIP;
@@ -331,7 +336,7 @@ public class SacredClient
         LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
 
         //Done
-        Log.Info($"{GetPrintableName()} connected as a GameServer with name '{ServerInfo.Name}'");
+        Log.Info($"{GetPrintableName()} logged in as a server!");
         Log.Trace(ServerInfo.ToString());
     }
 
@@ -344,7 +349,7 @@ public class SacredClient
             CurrentPlayers = newInfo.CurrentPlayers
         };
 
-        Log.Info($"GameServer {GetPrintableName()} changed public info");
+        Log.Info($"GameServer {GetPrintableName()} changed public info {ServerInfo.CurrentPlayers}/{ServerInfo.MaxPlayers} {ServerInfo.Flags}");
 
         LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
     }

@@ -130,10 +130,12 @@ internal static partial class LobbyServer
         while (!cancellationTokenSource.IsCancellationRequested)
         {
             var socket = await listener.AcceptSocketAsync(cancellationTokenSource.Token);
-            var remoteIp = (socket.RemoteEndPoint as IPEndPoint)!.Address;
+            var endPoint = (socket.RemoteEndPoint as IPEndPoint)!;
+            var remoteIp = endPoint.Address;
 
             if (Config.Instance.IsBanned(remoteIp, BanType.Full))
             {
+                Log.Info($"Connection refused from {remoteIp} because IP is banned");
                 socket.Close();
                 socket.Dispose();
             }
