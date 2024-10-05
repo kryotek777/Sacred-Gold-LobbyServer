@@ -30,7 +30,6 @@ public class SacredClient
 
     public void Start()
     {
-        LobbyServer.AddClient(this);
         connection.Start();
     }
 

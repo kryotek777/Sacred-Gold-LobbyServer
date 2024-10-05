@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Sacred.Networking;
@@ -6,14 +7,16 @@ namespace Sacred;
 
 internal static partial class LobbyServer
 {
-    private static readonly ReaderWriterLockSlim clientsLock = new(LockRecursionPolicy.SupportsRecursion);
-    private static readonly List<SacredClient> clients = new();
     private static readonly List<Task> tasks = new();
     private static readonly List<ServerInfo> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
 
-    private static IEnumerable<SacredClient> Users => clients.Where(c => c.ClientType == ClientType.GameClient);
+
+    private static ConcurrentDictionary<uint, SacredClient> ClientDictionary { get; set; } = new();
+    private static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
+    private static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
+    private static IEnumerable<SacredClient> Servers =  Clients.Where(c => c.ClientType == ClientType.GameServer);
     
     public static Task Start()
     {
@@ -42,61 +45,38 @@ internal static partial class LobbyServer
         cancellationTokenSource.Cancel();
     }
 
-    public static void AddClient(SacredClient client)
-    {
-        clientsLock.EnterWriteLock();
-        clients.Add(client);
-        clientsLock.ExitWriteLock();
-    }
-
     public static void RemoveClient(SacredClient client)
     {
-        clientsLock.EnterWriteLock();
-        clients.Remove(client);
-        clientsLock.ExitWriteLock();
+        ClientDictionary.Remove(client.ConnectionId, out _);
         Log.Info($"Client removed {client.GetPrintableName()}");
     }
 
     public static void SendPacketToAllGameClients(SacredMsgType type, byte[] payload)
     {
-        clientsLock.EnterReadLock();
-        foreach (var client in clients.Where(x => x.ClientType == ClientType.GameClient))
+        foreach (var client in Users)
         {
             client.SendPacket(type, payload);
         }
-        clientsLock.ExitReadLock();
     }
 
     public static void ForEachClient(Action<SacredClient> action)
     {
-        clientsLock.EnterReadLock();
-        foreach (var client in clients)
+        foreach (var client in Clients)
         {
             action(client);
         }
-        clientsLock.ExitReadLock();
     }
 
-    public static SacredClient? GetClientFromPermId(int permId)
-    {
-        clientsLock.EnterReadLock();
-        var cl = clients.FirstOrDefault(x => permId == (int)x.ConnectionId);
-        clientsLock.ExitReadLock();
-        return cl;
-    }
+    public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == (int)x.ConnectionId);
 
     public static List<ServerInfo> GetAllServerInfos()
     {
-        clientsLock.EnterReadLock();
-
-        var serverList = clients
-            .Where(x => x.ClientType == ClientType.GameServer && x.ServerInfo != null)
+        var serverList = Servers
+            .Where(x => x.ServerInfo != null)
             .Select(x => x.ServerInfo)
             .Concat(separators)
             .Where(x => x != null)
             .ToList();
-
-        clientsLock.ExitReadLock();
 
         return serverList!;
     }
@@ -131,7 +111,9 @@ internal static partial class LobbyServer
             }
             else
             {
-                var client = new SacredClient(socket, ++connectionIdCounter);
+                var connId = ++connectionIdCounter;
+                var client = new SacredClient(socket, connId);
+                ClientDictionary[connId] = client;
                 client.Start();
             }
         }

@@ -98,51 +98,39 @@ internal static partial class LobbyServer
 
         static void List()
         {
-            clientsLock.EnterReadLock();
-            Console.WriteLine($"There are {clients.Count} connected clients:");
-            foreach (var item in clients.OrderBy(x => x.ClientType))
+            Console.WriteLine($"There are {ClientDictionary.Count} connected clients:");
+            foreach (var item in Clients.OrderBy(x => x.ClientType))
             {
                 Console.WriteLine($"{item.GetPrintableName()} {item.ClientType}");
             }
-            clientsLock.ExitReadLock();
         }
 
         static void Kick(int client)
         {
-            clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client)?.Kick();
-            clientsLock.ExitReadLock();        
+            Clients.First(x => x.ConnectionId == client)?.Kick();
         }
 
         static void BroadcastMessage(string message)
         {
-            clientsLock.EnterReadLock();
-            foreach (var cl in clients.Where(x => x.ClientType == Networking.ClientType.GameClient))
+            foreach (var cl in Clients.Where(x => x.ClientType == Networking.ClientType.GameClient))
             {
                 cl.SendChatMessage("LobbyServer", message, 0);
             }
-            clientsLock.ExitReadLock();
         }
 
         static void DebugJoinRoom(int client, int room)
         {
-            clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client).JoinChannel(room);
-            clientsLock.ExitReadLock();
+            Clients.First(x => x.ConnectionId == client).JoinChannel(room);
         }
 
         static void DebugLobbyResult(int client, int message, int result)
         {
-            clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client).SendLobbyResult((LobbyResults)result, (SacredMsgType)message);
-            clientsLock.ExitReadLock();
+            Clients.First(x => x.ConnectionId == client).SendLobbyResult((LobbyResults)result, (SacredMsgType)message);
         }
 
         static void DebugServerList(int client)
         {
-            clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client).SendServerList();
-            clientsLock.ExitReadLock();
+            Clients.First(x => x.ConnectionId == client).SendServerList();
         }
     }
 }
