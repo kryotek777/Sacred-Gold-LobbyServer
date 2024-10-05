@@ -20,6 +20,13 @@ public ref struct SpanReader
         return result;
     }
 
+    public bool ReadBoolean()
+    {
+        var result = Span[Position] != 0;
+        Position += sizeof(bool);
+        return result;    
+    }
+
     public byte ReadByte()
     {
         var result = Span[Position];
