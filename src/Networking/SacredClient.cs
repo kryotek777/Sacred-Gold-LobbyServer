@@ -15,8 +15,9 @@ public class SacredClient
     public string? clientName { get; private set; }
     public ProfileData Profile { get; private set; }
     public int SelectedBlock { get; set; }
-
     public int Channel { get; private set; }
+    // TODO: Actually make Permanent Ids permanent when we implement persistent accounts...
+    public int PermId => (int)ConnectionId;
 
     private SacredConnection connection;
     public SacredClient(Socket socket, uint connectionId)
@@ -24,7 +25,7 @@ public class SacredClient
         connection = new SacredConnection(this, socket, connectionId);
         ConnectionId = connectionId;
         ServerInfo = null;
-        Profile = ProfileData.CreateEmpty((int)ConnectionId);
+        Profile = ProfileData.CreateEmpty(PermId);
         Channel = -1;
     }
 
@@ -247,7 +248,7 @@ public class SacredClient
     private void OnReceivePublicData(PublicData publicData)
     {
         //The lobby received the client's profile data
-        if(publicData.PermId == (int)ConnectionId && publicData.BlockId == Constants.ProfileBlockId)
+        if(publicData.PermId == PermId && publicData.BlockId == Constants.ProfileBlockId)
         {
             lock(_lock)
             {
@@ -282,7 +283,7 @@ public class SacredClient
         var loginResult = new LoginResult(
             Result: LobbyResults.Ok,
             Ip: connection.RemoteEndPoint.Address,
-            PermId: (int)ConnectionId,
+            PermId: PermId,
             Message: "Welcome!"
         );
 
@@ -359,7 +360,7 @@ public class SacredClient
         var msg = message with
         {
             SenderName = clientName ?? "<unknown>",
-            SenderPermId = (int)ConnectionId
+            SenderPermId = PermId
         };
 
         LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendChatMessage, msg.Serialize());
@@ -368,7 +369,7 @@ public class SacredClient
     }
     #endregion
 
-    public void SendChatMessage(string from, string message, int senderId) => SendChatMessage(new SacredChatMessage(from, senderId, (int)ConnectionId, message));
+    public void SendChatMessage(string from, string message, int senderId) => SendChatMessage(new SacredChatMessage(from, senderId, PermId, message));
 
     public void SendChatMessage(SacredChatMessage message)
     {

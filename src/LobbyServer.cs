@@ -67,7 +67,7 @@ internal static partial class LobbyServer
         }
     }
 
-    public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == (int)x.ConnectionId);
+    public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == x.PermId);
 
     public static List<ServerInfo> GetAllServerInfos()
     {
@@ -116,7 +116,7 @@ internal static partial class LobbyServer
         foreach (var user in Users)
         {
             if(user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
-                user.OtherUserLeftChannel((int)leaving.ConnectionId);
+                user.OtherUserLeftChannel(leaving.PermId);
         }
     }
 
