@@ -8,13 +8,15 @@ public class SacredClient
 {
     public object _lock = new();
     public ClientType ClientType => connection.ClientType;
+    public bool IsInChannel => Channel != -1;
     public uint ConnectionId { get; private set; }
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfo? ServerInfo { get; private set; }
     public string? clientName { get; private set; }
-    public bool hasSelectedCharacter = false;
     public ProfileData Profile { get; private set; }
     public int SelectedBlock { get; set; }
+
+    public int Channel { get; private set; }
 
     private SacredConnection connection;
     public SacredClient(Socket socket, uint connectionId)
@@ -23,6 +25,7 @@ public class SacredClient
         ConnectionId = connectionId;
         ServerInfo = null;
         Profile = ProfileData.CreateEmpty((int)ConnectionId);
+        Channel = -1;
     }
 
     public void Start()
@@ -35,11 +38,7 @@ public class SacredClient
     {
         if(ClientType == ClientType.GameClient)
         {
-            LobbyServer.ForEachClient(x =>
-            {
-                if (x.ClientType == ClientType.GameClient && x.ConnectionId != ConnectionId)
-                    x.UserLeavedRoom(ConnectionId);
-            });       
+            LobbyServer.UserLeftChannel((int)ConnectionId);
         }
         else if(ClientType == ClientType.GameServer)
         {
@@ -124,10 +123,15 @@ public class SacredClient
             break;
             case SacredMsgType.ChannelJoinRequest:
             {
-                var request = ChannelJoinRequest.Deserialize(payload);
-                OnChannelJoinRequest(request);
+                var channel = (int)reader.ReadUInt16();
+                OnChannelJoinRequest(channel);
             }
             break;            
+            case SacredMsgType.ChannelLeaveRequest:
+            {
+                OnChannelLeaveRequest();
+            }
+            break;
             case SacredMsgType.MessageOfTheDayRequest:
             {
                 var id = reader.ReadUInt16();
@@ -161,6 +165,12 @@ public class SacredClient
     }
 
     #region OnSacred
+    public void OnChannelLeaveRequest()
+    {
+        Channel = -1;
+        LobbyServer.UserLeftChannel((int)ConnectionId);
+    }
+
     public void OnServerLogout()
     {
         LobbyServer.ForEachClient(x => 
@@ -172,11 +182,7 @@ public class SacredClient
 
     public void OnUserJoinedServer(uint permId)
     {
-        LobbyServer.ForEachClient(x =>
-        {
-            if (x.ClientType == ClientType.GameClient)
-                x.UserLeavedRoom(permId);
-        });
+        
     }
 
     public void OnMessageOfTheDayRequest(ushort id)
@@ -186,11 +192,11 @@ public class SacredClient
         connection.EnqueuePacket(SacredMsgType.SendMessageOfTheDay, motd.Serialize());
     }
 
-    public void OnChannelJoinRequest(ChannelJoinRequest channelJoinRequest)
+    public void OnChannelJoinRequest(int channel)
     {
-        Log.Warning($"{GetPrintableName()} asked to join channel {channelJoinRequest.ChannelId}, but channels aren't implemented yet!");
+        Log.Warning($"{GetPrintableName()} asked to join channel {channel}, but channels aren't implemented yet!");
 
-        JoinRoom(0);
+        JoinChannel(0);
     }
 
     private void OnServerListRequest(ServerListRequest serverListRequest)
@@ -253,7 +259,7 @@ public class SacredClient
             SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
 
             //Update the data for all clients
-            if(hasSelectedCharacter)
+            if(IsInChannel)
             {
                 lock(_lock)
                     LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, Profile));
@@ -345,7 +351,7 @@ public class SacredClient
 
     public void OnClientCharacterSelect(ushort blockId)
     {
-        hasSelectedCharacter = true;
+        
     }
 
     private void OnClientChatMessage(SacredChatMessage message)
@@ -380,31 +386,36 @@ public class SacredClient
         }
     }   
 
-    public void JoinRoom(int roomNumber)
+    public void JoinChannel(int channel)
     {
-        SendPacket(SacredMsgType.ClientJoinChannel, BitConverter.GetBytes(roomNumber));
-
-        SendChannelChatMessage();
-
-        string myName;
-        lock(_lock)
-            myName = $"{Profile.Account}.CharacterName";
-
-        LobbyServer.ForEachClient(cl => 
+        // TODO: When fully implementing channels, we need to leave the one we're actually in
+        if(Channel != channel)
         {
-            if(cl.ClientType == ClientType.GameClient && cl.hasSelectedCharacter && cl.ConnectionId != ConnectionId)
+            Channel = channel;
+            
+            SendPacket(SacredMsgType.UserJoinChannel, BitConverter.GetBytes(channel));
+
+            SendChannelChatMessage();
+
+            string myName;
+            lock(_lock)
+                myName = $"{Profile.Account}.CharacterName";
+
+            LobbyServer.ForEachClient(cl => 
             {
-                cl.UserLeavedRoom(ConnectionId);
-                cl.UserJoinedRoom((int)ConnectionId, myName);
+                if(cl.ClientType == ClientType.GameClient && cl.IsInChannel && cl.ConnectionId != ConnectionId)
+                {
+                    cl.OtherUserJoinedChannel((int)ConnectionId, myName);
 
-                string theirName;
-                lock(cl._lock)
-                    theirName = $"{cl.Profile.Account}.CharacterName";
+                    string theirName;
+                    lock(cl._lock)
+                        theirName = $"{cl.Profile.Account}.CharacterName";
 
-                UserJoinedRoom((int)cl.ConnectionId, theirName);
+                    OtherUserJoinedChannel((int)cl.ConnectionId, theirName);
 
-            }
-        });
+                }
+            });
+        }
     }
 
     public void SendLobbyResult(LobbyResults result, SacredMsgType answeringTo)
@@ -418,21 +429,21 @@ public class SacredClient
         SendPacket(SacredMsgType.SendPublicData, publicData.Serialize());
     }
 
-    public void UserJoinedRoom(int permId, string name)
+    public void OtherUserJoinedChannel(int permId, string name)
     {
         var data = new UserJoinLeave(permId, name);
-
-        SendPacket(SacredMsgType.OtherClientJoinedChannel, data.Serialize());
+        SendPacket(SacredMsgType.OtherUserJoinedChannel, data.Serialize());
     }
 
-    public void UserLeavedRoom(uint connId)
+    public void OtherUserLeftChannel(int permId)
     {
-        var ms = new MemoryStream();
-        var w = new BinaryWriter(ms);
+        // The payload *should* be an UserJoinLeave
+        // but since the name doesn't seem to be used, why the overhead of serializing the username?
 
-        w.Write(connId);
+        // var payload = new UserJoinLeave(permId, name).Serialize();
+        var payload = BitConverter.GetBytes(permId);
 
-        SendPacket(SacredMsgType.OtherClientLeftChannel, ms.ToArray());
+        connection.EnqueuePacket(SacredMsgType.OtherUserLeftChannel, payload);
     }
 
     public void Kick()

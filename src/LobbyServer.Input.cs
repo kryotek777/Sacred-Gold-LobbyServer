@@ -127,7 +127,7 @@ internal static partial class LobbyServer
         static void DebugJoinRoom(int client, int room)
         {
             clientsLock.EnterReadLock();
-            clients.First(x => x.ConnectionId == client).JoinRoom(room);
+            clients.First(x => x.ConnectionId == client).JoinChannel(room);
             clientsLock.ExitReadLock();
         }
 

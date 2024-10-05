@@ -12,6 +12,8 @@ internal static partial class LobbyServer
     private static readonly List<ServerInfo> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
+
+    private static IEnumerable<SacredClient> Users => clients.Where(c => c.ClientType == ClientType.GameClient);
     
     public static Task Start()
     {
@@ -97,6 +99,17 @@ internal static partial class LobbyServer
         clientsLock.ExitReadLock();
 
         return serverList!;
+    }
+
+    public static void UserLeftChannel(int permId)
+    {
+        clientsLock.EnterReadLock();
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel && (int)user.ConnectionId != permId)
+                user.OtherUserLeftChannel(permId);
+        }
+        clientsLock.ExitReadLock();
     }
 
     private static async void AcceptLoop()
