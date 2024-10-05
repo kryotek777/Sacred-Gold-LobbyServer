@@ -81,15 +81,43 @@ internal static partial class LobbyServer
         return serverList!;
     }
 
-    public static void UserLeftChannel(int permId)
+    /// <summary>
+    /// Notifies other clients that a user has joined a channel and sends them the user list
+    /// </summary>
+    /// <param name="joining"></param>
+    public static void UserJoinedChannel(SacredClient joining)
     {
-        clientsLock.EnterReadLock();
+        lock(joining._lock)
+        {
+            foreach (var user in Users)
+            {
+                if(user.IsInChannel && user.ConnectionId != joining.ConnectionId)
+                {
+                    // I know there's a specific message to notify that a user has joined a channel!
+                    // But just sending the profile data works anyway, saves us a packet and prevents flickering in the user list!
+                    
+                    // Send our data to the other client
+                    user.SendProfileData(joining.Profile);
+                    
+                    // Send us the client's data
+                    lock(user._lock)
+                        joining.SendProfileData(user.Profile);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Notifies other clients that a user has left the channel
+    /// </summary>
+    /// <param name="permId"></param>
+    public static void UserLeftChannel(SacredClient leaving)
+    {
         foreach (var user in Users)
         {
-            if(user.IsInChannel && (int)user.ConnectionId != permId)
-                user.OtherUserLeftChannel(permId);
+            if(user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
+                user.OtherUserLeftChannel((int)leaving.ConnectionId);
         }
-        clientsLock.ExitReadLock();
     }
 
     private static async void AcceptLoop()

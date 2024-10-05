@@ -37,7 +37,7 @@ public class SacredClient
     {
         if(ClientType == ClientType.GameClient)
         {
-            LobbyServer.UserLeftChannel((int)ConnectionId);
+            LobbyServer.UserLeftChannel(this);
         }
         else if(ClientType == ClientType.GameServer)
         {
@@ -167,7 +167,7 @@ public class SacredClient
     public void OnChannelLeaveRequest()
     {
         Channel = -1;
-        LobbyServer.UserLeftChannel((int)ConnectionId);
+        LobbyServer.UserLeftChannel(this);
     }
 
     public void OnServerLogout()
@@ -222,7 +222,7 @@ public class SacredClient
                     data = client.Profile;
                 }            
 
-                SendProfileData(request.PermId, client.Profile);
+                SendProfileData(client.Profile);
             }
             else
             {
@@ -261,7 +261,7 @@ public class SacredClient
             if(IsInChannel)
             {
                 lock(_lock)
-                    LobbyServer.ForEachClient(x => x.SendProfileData((int)ConnectionId, Profile));
+                    LobbyServer.ForEachClient(x => x.SendProfileData(Profile));
             }
         }
     }
@@ -396,24 +396,7 @@ public class SacredClient
 
             SendChannelChatMessage();
 
-            string myName;
-            lock(_lock)
-                myName = $"{Profile.Account}.CharacterName";
-
-            LobbyServer.ForEachClient(cl => 
-            {
-                if(cl.ClientType == ClientType.GameClient && cl.IsInChannel && cl.ConnectionId != ConnectionId)
-                {
-                    cl.OtherUserJoinedChannel((int)ConnectionId, myName);
-
-                    string theirName;
-                    lock(cl._lock)
-                        theirName = $"{cl.Profile.Account}.CharacterName";
-
-                    OtherUserJoinedChannel((int)cl.ConnectionId, theirName);
-
-                }
-            });
+            LobbyServer.UserJoinedChannel(this);
         }
     }
 
@@ -422,16 +405,10 @@ public class SacredClient
         SendPacket(SacredMsgType.LobbyResult, new LobbyResult(result, answeringTo).Serialize());
     }
 
-    public void SendProfileData(int permId, ProfileData data)
+    public void SendProfileData(ProfileData data)
     {
-        var publicData = PublicData.FromProfileData(permId, data);
+        var publicData = PublicData.FromProfileData(data.PermId, data);
         SendPacket(SacredMsgType.SendPublicData, publicData.Serialize());
-    }
-
-    public void OtherUserJoinedChannel(int permId, string name)
-    {
-        var data = new UserJoinLeave(permId, name);
-        SendPacket(SacredMsgType.OtherUserJoinedChannel, data.Serialize());
     }
 
     public void OtherUserLeftChannel(int permId)
