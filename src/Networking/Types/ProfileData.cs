@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Sacred.Networking.Types;
 
 /// <summary>
@@ -17,16 +15,18 @@ public record ProfileData(
     string Text,
     string Email,
     int PermId,
+    uint ConnectionSpeed,
     bool ShowEmail,
-    byte Slot,
-    string[] LobbyCharNames,
-    byte[] HeroPreviewData
-
+    int SelectedCharacterSlot,
+    string[] CharactersNames,
+    CharacterPreview SelectedCharacter
 ) : ISerializable<ProfileData>
 {
+    private const int CharacterNamesCount = 8;
+
     public static ProfileData Deserialize(ReadOnlySpan<byte> span)
     {
-        using var reader = new BinaryReader(new MemoryStream(span.ToArray()));
+        var reader = new SpanReader(span);
 
         var Version = reader.ReadUInt16();
         var Account = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
@@ -38,50 +38,81 @@ public record ProfileData(
         var Text = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileTextLength));
         var Email = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
         var PermId = reader.ReadInt32();
-        var Slot = reader.ReadByte();
+        var ConnectionSpeed = reader.ReadUInt32();
         var ShowEmail = reader.ReadBoolean();
-        var LobbyCharNames = new string[6];
+        var SelectedCharacterSlot = reader.ReadByte();
+        var CharactersNames = new string[CharacterNamesCount];
         
-        for (int i = 0; i < LobbyCharNames.Length; i++)
+        for (int i = 0; i < CharacterNamesCount; i++)
         {
-            LobbyCharNames[i] = Encoding.Unicode.GetString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
+            CharactersNames[i] = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
         }
         
-        var HeroPreviewData = reader.ReadBytes(880);
+        var SelectedCharacter = CharacterPreview.Deserialize(reader.ReadAll());
 
-        return new ProfileData(Version, Account, Name, Nick, Clan, Page, Icq, Text, Email, PermId, ShowEmail, Slot, LobbyCharNames, HeroPreviewData);
+        return new ProfileData(
+            Version, 
+            Account, 
+            Name, 
+            Nick, 
+            Clan, 
+            Page, 
+            Icq, 
+            Text, 
+            Email, 
+            PermId, 
+            ConnectionSpeed, 
+            ShowEmail, 
+            SelectedCharacterSlot,
+            CharactersNames, 
+            SelectedCharacter
+        );
     }
 
     public byte[] Serialize()
     {
-        using var ms = new MemoryStream();
-        using var writer = new BinaryWriter(ms);
+        using var stream = new MemoryStream();
 
-        writer.Write(Version);
-        writer.Write(Utils.StringToUtf16(Account, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Name, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Nick, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Clan, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Page, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Icq, Constants.Utf16ProfileStringLength));
-        writer.Write(Utils.StringToUtf16(Text, Constants.Utf16ProfileTextLength));
-        writer.Write(Utils.StringToUtf16(Email, Constants.Utf16ProfileStringLength));
-        writer.Write(PermId);
-        writer.Write(Slot);
-        writer.Write(ShowEmail);
-
-        for (int i = 0; i < LobbyCharNames.Length; i++)
+        stream.Write(Version);
+        stream.Write(Utils.StringToUtf16(Account, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Name, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Nick, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Clan, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Page, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Icq, Constants.Utf16ProfileStringLength));
+        stream.Write(Utils.StringToUtf16(Text, Constants.Utf16ProfileTextLength));
+        stream.Write(Utils.StringToUtf16(Email, Constants.Utf16ProfileStringLength));
+        stream.Write(PermId);
+        stream.Write(ConnectionSpeed);
+        stream.Write(ShowEmail);
+        stream.Write((byte)SelectedCharacterSlot);
+        
+        for (int i = 0; i < CharactersNames.Length; i++)
         {
-            writer.Write(Utils.StringToUtf16(LobbyCharNames[i], Constants.Utf16ProfileStringLength));
+            stream.Write(Utils.StringToUtf16(CharactersNames[i], Constants.Utf16ProfileStringLength));
         }
 
-        writer.Write(HeroPreviewData);
+        stream.Write(SelectedCharacter.Serialize());
 
-        return ms.ToArray();
+        return stream.ToArray();
     }
 
-    public static ProfileData CreateEmpty(int permId)
-    {
-        return new ProfileData(4, "", "", "", "", "", "", "", "", permId, false, 0, [ "", "", "", "", "", "" ], new byte[880]);
-    }
+    public static ProfileData CreateEmpty(int permId) =>
+    new ProfileData(
+            Version: 4, 
+            "Account", 
+            "Name", 
+            "Nick", 
+            "Clan", 
+            "Page", 
+            "Icq", 
+            "Text", 
+            "Email", 
+            permId, 
+            ConnectionSpeed: 0, 
+            ShowEmail: false, 
+            SelectedCharacterSlot: 0,
+            CharactersNames: ["", "", "", "", "", "", "", ""], 
+            SelectedCharacter: CharacterPreview.Empty
+    );
 }
