@@ -19,6 +19,7 @@ internal static class Log
         {
             try
             {
+                logFile?.Dispose();
                 logFile = new StreamWriter(File.Open(logPath, FileMode.OpenOrCreate));
             }
             catch(Exception ex)

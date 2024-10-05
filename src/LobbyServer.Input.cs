@@ -23,11 +23,12 @@ internal static partial class LobbyServer
                         Console.WriteLine(
                             """
                         Common commands:
-                        help                        |   Prints this message
-                        stop                        |   Stops the LobbyServer
-                        list                        |   Lists all the clients
-                        type                        |   Sends a message to clients
-                        kick <client>               |   Kicks a client
+                        help                |   Prints this message
+                        stop                |   Stops the LobbyServer
+                        list                |   Lists all the clients
+                        type                |   Sends a message to clients
+                        kick <client>       |   Kicks a client
+                        reload              |   Reloads the config
 
                         Debug commands:
                         dbg_join_room #client #room
@@ -54,6 +55,10 @@ internal static partial class LobbyServer
                             Kick(client);
                     }
                     break;
+
+                    case "reload":
+                        LoadConfig();
+                        break;
 
                     case "dbg_join_room":
                         {

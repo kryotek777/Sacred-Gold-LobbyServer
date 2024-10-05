@@ -20,17 +20,7 @@ internal static partial class LobbyServer
     
     public static Task Start()
     {
-        // If the config fails to load for some reason, sane defaults are used
-        bool loadedDefaults = Config.Load(out var error);
-
-        // Initialize the log
-        Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
-
-        // Show the previous error
-        if(!loadedDefaults)
-            Log.Error(error!);
-
-        BuildSeparators();
+        LoadConfig();
 
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
@@ -144,6 +134,23 @@ internal static partial class LobbyServer
         }
     }
 
+    private static void LoadConfig()
+    {
+        // If the config fails to load for some reason, sane defaults are used
+        bool loadedDefaults = Config.Load(out var error);
+
+        // Initialize the log
+        Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
+
+        // Show the previous error
+        if(!loadedDefaults)
+            Log.Error(error!);
+
+        BuildSeparators();
+        
+        Log.Info("Config loaded!");
+    }
+
     private static async void AcceptLoop()
     {
         var listener = new TcpListener(IPAddress.Any, Config.Instance.Port);
@@ -175,6 +182,7 @@ internal static partial class LobbyServer
 
     private static void BuildSeparators()
     {
+        separators.Clear();
         separators.AddRange(Config.Instance.ServerSeparators.Select((name, i) => new ServerInfo(
             Name: name,
             LocalIp: IPAddress.None,
