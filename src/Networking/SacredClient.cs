@@ -58,10 +58,7 @@ public class SacredClient
         _ => $"{RemoteEndPoint}#{ConnectionId}",
     };
 
-    public void SendPacket(SacredMsgType msgType, ReadOnlySpan<byte> payload)
-    {
-        connection.EnqueuePacket(msgType, payload.ToArray());
-    }
+    public void SendPacket(SacredMsgType msgType, byte[] payload) => connection.EnqueuePacket(msgType, payload);
 
     public void ReceivePacket(SacredMsgType type, ReadOnlySpan<byte> payload)
     {
@@ -189,7 +186,7 @@ public class SacredClient
     {
         string text = Config.Instance.MessageOfTheDay;
         var motd = new MessageOfTheDay(id, text);
-        connection.EnqueuePacket(SacredMsgType.SendMessageOfTheDay, motd.Serialize());
+        SendPacket(SacredMsgType.SendMessageOfTheDay, motd.Serialize());
     }
 
     public void OnChannelJoinRequest(int channel)
@@ -434,18 +431,18 @@ public class SacredClient
         // var payload = new UserJoinLeave(permId, name).Serialize();
         var payload = BitConverter.GetBytes(permId);
 
-        connection.EnqueuePacket(SacredMsgType.OtherUserLeftChannel, payload);
+        SendPacket(SacredMsgType.OtherUserLeftChannel, payload);
     }
 
     public void Kick()
     {
         Log.Info($"Kicking {GetPrintableName}");
-        SendPacket(SacredMsgType.Kick, ReadOnlySpan<byte>.Empty);
+        SendPacket(SacredMsgType.Kick, Array.Empty<byte>());
     }
 
     public void RemoveServer(ServerInfo serverInfo)
     {
-        connection.EnqueuePacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
+        SendPacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
     }
 
     private void SendChannelChatMessage()
