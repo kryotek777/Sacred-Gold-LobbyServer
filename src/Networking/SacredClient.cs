@@ -46,7 +46,6 @@ public class SacredClient
             OnServerLogout();
         }
 
-
         connection.Stop();
 
         LobbyServer.RemoveClient(this);
@@ -173,8 +172,11 @@ public class SacredClient
     {
         LobbyServer.ForEachClient(x => 
         {
-            if(x.ClientType == ClientType.GameClient)
-                x.RemoveServer(ServerInfo!);
+            lock(_lock)
+            {
+                if(x.ClientType == ClientType.GameClient)
+                    x.RemoveServer(ServerInfo!);
+            }
         });
     }
 
@@ -321,37 +323,44 @@ public class SacredClient
             externalIP = RemoteEndPoint.Address;
         }
 
-        //Correct the server's info and save it
-        ServerInfo = serverInfo with
-        {
-            ExternalIp = externalIP,
-            ServerId = ConnectionId,
-            ChannelId = 0
-        };
-
         //Accept the login
         SendPacket(SacredMsgType.ServerLoginResult, externalIP.GetAddressBytes());
 
-        //Broadcast the new server to all clients
-        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+        lock(_lock)
+        {
+            //Correct the server's info and save it
+            ServerInfo = serverInfo with
+            {
+                ExternalIp = externalIP,
+                ServerId = ConnectionId,
+                ChannelId = 0
+            };
 
-        //Done
-        Log.Info($"{GetPrintableName()} logged in as a server!");
-        Log.Trace(ServerInfo.ToString());
+            //Broadcast the new server to all clients
+            LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+
+            //Done
+            Log.Info($"{GetPrintableName()} logged in as a server!");
+            Log.Trace(ServerInfo.ToString());
+        }
+
     }
 
     private void OnServerChangePublicInfo(ServerInfo newInfo)
     {
-        ServerInfo = ServerInfo! with
+        lock(_lock)
         {
-            Flags = newInfo.Flags,
-            MaxPlayers = newInfo.MaxPlayers,
-            CurrentPlayers = newInfo.CurrentPlayers
-        };
+            ServerInfo = ServerInfo! with
+            {
+                Flags = newInfo.Flags,
+                MaxPlayers = newInfo.MaxPlayers,
+                CurrentPlayers = newInfo.CurrentPlayers
+            };
 
-        Log.Info($"GameServer {GetPrintableName()} changed public info {ServerInfo.CurrentPlayers}/{ServerInfo.MaxPlayers} {ServerInfo.Flags}");
-
-        LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+            LobbyServer.SendPacketToAllGameClients(SacredMsgType.SendServerInfo, ServerInfo.Serialize());
+            
+            Log.Info($"GameServer {GetPrintableName()} changed public info {ServerInfo.CurrentPlayers}/{ServerInfo.MaxPlayers} {ServerInfo.Flags}");
+        }
     }
 
     public void OnClientCharacterSelect(ushort blockId)
