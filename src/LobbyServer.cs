@@ -136,6 +136,7 @@ internal static partial class LobbyServer
             joining.SendChatMessage(chatMessage with { DestinationPermId = joining.PermId });
         }
 
+        BroadcastSystemMessage($"\\cFFFFFFFF - {joining.clientName}\\cFF00FF00 joined the channel");
     }
 
     /// <summary>
@@ -149,6 +150,26 @@ internal static partial class LobbyServer
             if(user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
                 user.OtherUserLeftChannel(leaving.PermId);
         }
+
+        BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.clientName}\\cFFFF0000 left the channel");
+    }
+
+    private static void BroadcastSystemMessage(string message)
+    {
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel)
+            {
+                var msg = new SacredChatMessage(
+                    SenderName: "",
+                    SenderPermId: 0,
+                    user.PermId,
+                    message
+                );
+
+                user.SendChatMessage(msg);
+            }
+        }    
     }
 
     private static void LoadConfig()
