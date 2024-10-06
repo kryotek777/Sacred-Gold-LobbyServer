@@ -16,6 +16,7 @@ public class Config
     public string ChannelChatMessage { get; set; }
     public List<Ban> Bans { get; set; }
     public List<string> ServerSeparators { get; set; }
+    public uint ChatHistoryLimit { get; set; }
 
     public Config()
     {

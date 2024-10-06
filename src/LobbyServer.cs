@@ -17,6 +17,8 @@ internal static partial class LobbyServer
     private static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
     private static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
     private static IEnumerable<SacredClient> Servers =  Clients.Where(c => c.ClientType == ClientType.GameServer);
+
+    private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
     
     public static Task Start()
     {
@@ -88,6 +90,15 @@ internal static partial class LobbyServer
     /// <param name="chatMessage">The message to broadcast</param>
     public static void BroadcastChatMessage(SacredChatMessage chatMessage)
     {
+        var maxHistory = Config.Instance.ChatHistoryLimit;
+        if(maxHistory > 0)
+        {
+            if(ChatHistory.Count == maxHistory)
+                ChatHistory.TryDequeue(out _);
+
+            ChatHistory.Enqueue(chatMessage);
+        }
+
         foreach (var user in Users)
         {
             if(user.IsInChannel && user.PermId != chatMessage.SenderPermId)
@@ -119,6 +130,12 @@ internal static partial class LobbyServer
                 }
             }
         }
+
+        foreach (var chatMessage in ChatHistory)
+        {
+            joining.SendChatMessage(chatMessage with { DestinationPermId = joining.PermId });
+        }
+
     }
 
     /// <summary>

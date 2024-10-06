@@ -31,6 +31,11 @@ Unofficial LobbyServer reimplementation by \cFF00FFFFKryotek
 Source: \cFFAA55FFhttps://github.com/kryotek777/Sacred-Gold-LobbyServer
 '''
 
+# How many messages will be stored for the chat history
+# Use 0 to disable chat history
+
+ChatHistoryLimit = 20
+
 # Fake servers that will be sent in the server list to act as separators.
 # Servers are always ordered alphabetically by the client,
 # so try to be clever with your names to preserve ordering!
