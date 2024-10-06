@@ -135,10 +135,15 @@ public class SacredClient
             break;
             case SacredMsgType.UserJoinedServer:
             {
-                var permId = reader.ReadUInt32();
+                var permId = reader.ReadInt32();
                 var blockId = reader.ReadUInt16();
 
                 OnUserJoinedServer(permId);
+            }
+            break;
+            case SacredMsgType.UserLeftServer:
+            {
+                //NO-OP
             }
             break;
             case SacredMsgType.ServerLogout:
@@ -175,9 +180,23 @@ public class SacredClient
             LobbyServer.RemoveServer(ServerInfo!);
     }
 
-    public void OnUserJoinedServer(uint permId)
+    public void OnUserJoinedServer(int permId)
     {
-        
+        var client = LobbyServer.GetClientFromPermId(permId);
+
+        if(client != null)
+        {
+            lock(client._lock)
+            lock(_lock)
+            {
+                var accName = client.clientName;
+                var charName = client.Profile.SelectedCharacter.Name;
+                var gameName = ServerInfo!.Name;
+                LobbyServer.BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");
+            }
+
+            Log.Info($"{client.GetPrintableName()} joined {GetPrintableName()}");
+        }
     }
 
     public void OnMessageOfTheDayRequest(ushort id)

@@ -154,7 +154,7 @@ internal static partial class LobbyServer
         BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.clientName}\\cFFFF0000 left the channel");
     }
 
-    private static void BroadcastSystemMessage(string message)
+    public static void BroadcastSystemMessage(string message)
     {
         foreach (var user in Users)
         {
