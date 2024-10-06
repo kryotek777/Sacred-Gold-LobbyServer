@@ -17,6 +17,7 @@ public class Config
     public List<Ban> Bans { get; set; }
     public List<string> ServerSeparators { get; set; }
     public uint ChatHistoryLimit { get; set; }
+    public string AllowedUsernameRegex { get; set; }
 
     public Config()
     {
@@ -27,6 +28,8 @@ public class Config
         ChannelChatMessage = "";
         Bans = new();
         ServerSeparators = new();
+        ChatHistoryLimit = 0;
+        AllowedUsernameRegex = ".*";
     }
 
     public static bool Load([NotNullWhen(false)] out string? error)

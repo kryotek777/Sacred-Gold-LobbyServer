@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using Sacred.Networking.Types;
 
 namespace Sacred.Networking;
@@ -270,22 +271,41 @@ public class SacredClient
 
         Log.Trace($"{GetPrintableName()} logs in as user {loginRequest}");
 
-        //We now know that a User is connecting
-        connection.ClientType = ClientType.GameClient;
 
+        // Check for the name's validity
         clientName = loginRequest.Username;
+        if(Regex.IsMatch(clientName, Config.Instance.AllowedUsernameRegex))
+        {
+            // We now know that a User is connecting
+            connection.ClientType = ClientType.GameClient;
 
-        var loginResult = new LoginResult(
-            Result: LobbyResults.Ok,
-            Ip: connection.RemoteEndPoint.Address,
-            PermId: PermId,
-            Message: "Welcome!"
-        );
+            var loginResult = new LoginResult(
+                Result: LobbyResults.Ok,
+                Ip: connection.RemoteEndPoint.Address,
+                PermId: PermId,
+                Message: "Welcome!"
+            );
 
-        SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
-        SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
+            SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+            SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
-        Log.Info($"{GetPrintableName()} logged in as an user!");
+            Log.Info($"{GetPrintableName()} logged in as an user!");        
+        }
+        else
+        {
+            var loginResult = new LoginResult(
+                Result: LobbyResults.InternalError,
+                Ip: IPAddress.None,
+                PermId: -1,
+                Message: ""
+            );
+
+            SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+
+            SendImportantMessage("Your username is not allowed! Please choose a different one");
+
+            Log.Info($"{GetPrintableName()} tried to login with an invalid username {clientName}");        
+        }
     }
 
     private void OnServerLoginRequest(ServerInfo serverInfo)

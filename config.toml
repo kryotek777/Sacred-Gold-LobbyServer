@@ -42,6 +42,11 @@ ChatHistoryLimit = 20
 
 ServerSeparators = [ "## Vanilla ##", "## Modded ##" ]
 
+# A Regular Expression defining what usernames are allowed
+# The default one is '^[\w-\\]+$' and allows letters, numbers, underscores (_), dashes (-) and backslashes (\, for colored names)
+
+AllowedUsernameRegex = '^[\w-\\]+$'
+
 # Here you can ban people by their ip address
 # Bans can be of three types
 # Full: The connection is dropped instantly without even attemping to figure out the client's type.
