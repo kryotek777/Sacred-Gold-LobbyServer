@@ -40,7 +40,7 @@ public class SacredClient
     {
         if(ClientType == ClientType.GameClient)
         {
-            LobbyServer.UserLeftChannel(this);
+            OnChannelLeaveRequest();
         }
         else if(ClientType == ClientType.GameServer)
         {
@@ -162,8 +162,11 @@ public class SacredClient
     #region OnSacred
     public void OnChannelLeaveRequest()
     {
-        Channel = -1;
-        LobbyServer.UserLeftChannel(this);
+        if(Channel != -1)
+        {
+            Channel = -1;
+            LobbyServer.UserLeftChannel(this);
+        }
     }
 
     public void OnServerLogout()
