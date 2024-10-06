@@ -442,6 +442,13 @@ public class SacredClient
         SendPacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
     }
 
+    public void SendImportantMessage(string message, bool showPopup = true)
+    {
+        var msg = new ImportantMessage(showPopup, message, PermId);
+
+        SendPacket(SacredMsgType.ClientImportantMessage, msg.Serialize());
+    }
+
     private void SendChannelChatMessage()
     {
         var message = Config.Instance.ChannelChatMessage;
