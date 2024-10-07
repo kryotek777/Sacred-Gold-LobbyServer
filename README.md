@@ -8,6 +8,11 @@ The lobby servers were responsible for maintaining lists of both official and co
 
 This reimplementation aims to recreate the functionality of the original lobby servers, providing a platform for players to discover and connect to active game servers for multiplayer gameplay.
 
+> [!CAUTION]
+> Write slow in the lobby's chat! The game has an anti-flood system that prevents messages from being sent to the lobby
+> If you write more than a message every two seconds, every subsequent message gets cached until the flood timer resets
+> Then when writing a new message, all cached messages get sent
+
 ## Features
 
 ### Implemented
