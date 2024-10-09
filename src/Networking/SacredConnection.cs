@@ -108,18 +108,23 @@ public class SacredConnection
             {
                 var error = ReadPacket();
 
-                var message = error switch
+                if(error != PacketError.None)
                 {
-                    PacketError.WrongMagic => "Wrong magic number, not a TinCat packet?",
-                    PacketError.WrongChecksum => "CRC32 check failed!",
-                    PacketError.PacketUnexpected => "Unexpected TinCat packet",
-                    PacketError.WrongModuleId => "Wrong module id!",
-                    PacketError.SecurityTypeMismatch => "Types don't match, packet is corrupt",
-                    PacketError.SecurityWrongKey => "Security key is wrong!",
-                    PacketError.SecurityNotAllowed => "Packet not allowed from this type of client",
-                    PacketError.SecurityLengthMismatch => "Packet length is wrong!",
-                    _ => ""
-                };
+                    var message = error switch
+                    {
+                        PacketError.WrongMagic => "Wrong magic number, not a TinCat packet?",
+                        PacketError.WrongChecksum => "CRC32 check failed!",
+                        PacketError.PacketUnexpected => "Unexpected TinCat packet",
+                        PacketError.WrongModuleId => "Wrong module id!",
+                        PacketError.SecurityTypeMismatch => "Types don't match, packet is corrupt",
+                        PacketError.SecurityWrongKey => "Security key is wrong!",
+                        PacketError.SecurityNotAllowed => "Packet not allowed from this type of client",
+                        PacketError.SecurityLengthMismatch => "Packet length is wrong!",
+                        _ => "Unknown error"
+                    };
+
+                    Log.Error($"{Client.GetPrintableName()}: {message}");
+                }
             }
         }
         catch (TimeoutException)
