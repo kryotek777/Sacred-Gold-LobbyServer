@@ -60,6 +60,7 @@ public class SacredClient
     };
 
     public void SendPacket(SacredMsgType msgType, byte[] payload) => connection.EnqueuePacket(msgType, payload);
+    public void SendPacket<T>(SacredMsgType msgType, in T serializable) where T : ISerializable<T> => connection.EnqueuePacket(msgType, serializable.Serialize());
 
     public void ReceivePacket(SacredMsgType type, ReadOnlySpan<byte> payload)
     {
@@ -308,7 +309,7 @@ public class SacredClient
                 Message: "Welcome!"
             );
 
-            SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+            SendPacket(SacredMsgType.ClientLoginResult, loginResult);
             SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
             Log.Info($"{GetPrintableName()} logged in as an user!");        
@@ -322,7 +323,7 @@ public class SacredClient
                 Message: ""
             );
 
-            SendPacket(SacredMsgType.ClientLoginResult, loginResult.Serialize());
+            SendPacket(SacredMsgType.ClientLoginResult, loginResult);
 
             SendImportantMessage("Your username is not allowed! Please choose a different one");
 
@@ -420,7 +421,7 @@ public class SacredClient
 
     public void SendChatMessage(SacredChatMessage message)
     {
-        SendPacket(SacredMsgType.SendChatMessage, message.Serialize());
+        SendPacket(SacredMsgType.SendChatMessage, message);
     }
 
     public void SendServerList()
@@ -429,7 +430,7 @@ public class SacredClient
 
         foreach (var info in infos)
         {
-            SendPacket(SacredMsgType.SendServerInfo, info.Serialize());
+            SendPacket(SacredMsgType.SendServerInfo, info);
         }
     }   
 
@@ -450,13 +451,13 @@ public class SacredClient
 
     public void SendLobbyResult(LobbyResults result, SacredMsgType answeringTo)
     {
-        SendPacket(SacredMsgType.LobbyResult, new LobbyResult(result, answeringTo).Serialize());
+        SendPacket(SacredMsgType.LobbyResult, new LobbyResult(result, answeringTo));
     }
 
     public void SendProfileData(ProfileData data)
     {
         var publicData = PublicData.FromProfileData(data.PermId, data);
-        SendPacket(SacredMsgType.SendPublicData, publicData.Serialize());
+        SendPacket(SacredMsgType.SendPublicData, publicData);
     }
 
     public void OtherUserLeftChannel(int permId)
@@ -476,19 +477,19 @@ public class SacredClient
         SendPacket(SacredMsgType.Kick, Array.Empty<byte>());
     }
 
-    public void UpdateServerInfo(ServerInfo serverInfo) => SendPacket(SacredMsgType.ServerChangePublicInfo, serverInfo.Serialize());
+    public void UpdateServerInfo(ServerInfo serverInfo) => SendPacket(SacredMsgType.ServerChangePublicInfo, serverInfo);
 
     public void RemoveServer(ServerInfo serverInfo)
     {
         // I thought it was SacredMsgType.RemoveServer, but that doesn't work for some reason
-        SendPacket(SacredMsgType.ServerLogout, serverInfo.Serialize());
+        SendPacket(SacredMsgType.ServerLogout, serverInfo);
     }
 
     public void SendImportantMessage(string message, bool showPopup = true)
     {
         var msg = new ImportantMessage(showPopup, message, PermId);
 
-        SendPacket(SacredMsgType.ClientImportantMessage, msg.Serialize());
+        SendPacket(SacredMsgType.ClientImportantMessage, msg);
     }
 
     private void SendChannelChatMessage()

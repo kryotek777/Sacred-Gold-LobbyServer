@@ -5,7 +5,7 @@ namespace Sacred.Networking.Types;
 /// </summary>
 /// <param name="Result">The result code</param>
 /// <param name="AnsweringTo">The message code we're answering to</param>
-public record LobbyResult(LobbyResults Result, SacredMsgType AnsweringTo) : ISerializable<LobbyResult>
+public record struct LobbyResult(LobbyResults Result, SacredMsgType AnsweringTo) : ISerializable<LobbyResult>
 {
     public static LobbyResult Deserialize(ReadOnlySpan<byte> span)
     {
