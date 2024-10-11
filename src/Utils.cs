@@ -106,6 +106,12 @@ internal static class Utils
     public static byte[] StringToWin1252(string str, int length)
     {
         var buf = new byte[length];
+
+        if(Windows1252Encoding.GetByteCount(str) > length)
+        {
+            Log.Error($"The string '{str}' doesn't fit in {length} bytes and will be cut off, this is a bug!");
+        }
+
         Windows1252Encoding.GetBytes(str, buf);
         return buf;
     }

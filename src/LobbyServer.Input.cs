@@ -119,7 +119,7 @@ internal static partial class LobbyServer
         {
             foreach (var cl in Clients.Where(x => x.ClientType == Networking.ClientType.GameClient))
             {
-                cl.SendChatMessage("LobbyServer", message, 0);
+                cl.SendChatMessage("LobbyServer", 0, message);
             }
         }
 

@@ -404,20 +404,55 @@ public class SacredClient
 
     private void OnClientChatMessage(SacredChatMessage message)
     {
-        //Ensure sender's parameters to prevent spoofing
-        var msg = message with
+        // Ignore the sender's parameters to prevent spoofing
+        message.Deconstruct(out var _, out var _, out var destinationPermId, out var text);
+
+        // Handle whisper messages
+        if(text.StartsWith("/w"))
         {
-            SenderName = clientName ?? "<unknown>",
-            SenderPermId = PermId
-        };
+            // Explained here: https://regex101.com/r/siaVkb/1
+            var match = Regex.Match(text, @"\/w\s+(?<name>.*?)\s+(?<message>.*)");
 
-        LobbyServer.BroadcastChatMessage(msg);
+            if(match.Success)
+            {
+                var name = match.Groups["name"].ValueSpan;
+                var user = LobbyServer.GetUserFromPartialName(name);
 
-        Log.Info($"{GetPrintableName()} says: {msg.Message}");
+                if(user != null)
+                {
+                    text = match.Groups["message"].Value;
+
+                    user.SendChatMessage(@$"{clientName}\cAAAAAAAA whispers to you", PermId, @$"\cFFFFFFFF{text}");
+                    SendSystemMessage(@$"\cAAAAAAAAYou whisper to {user.clientName}\cFFFFFFFF: {text}");
+                }
+                else
+                {
+                    SendSystemMessage("Player not found or multiple players found");
+                }
+            }
+            else
+            {
+                SendSystemMessage("Syntax error! Usage: /w <player> <message>");
+            }
+        }
+        else    //Normal message
+        {
+            var msg = message with
+            {
+                SenderName = clientName ?? "<unknown>",
+                SenderPermId = PermId
+            };
+
+            LobbyServer.BroadcastChatMessage(msg);
+
+            Log.Info($"{GetPrintableName()} says: {msg.Message}");
+        }
+
     }
     #endregion
 
-    public void SendChatMessage(string from, string message, int senderId) => SendChatMessage(new SacredChatMessage(from, senderId, PermId, message));
+    public void SendChatMessage(string from, int senderId, string message) => SendChatMessage(new SacredChatMessage(from, senderId, PermId, message));
+    public void SendSystemMessage(string message) => SendChatMessage(new SacredChatMessage("", 0, PermId, message));
 
     public void SendChatMessage(SacredChatMessage message)
     {

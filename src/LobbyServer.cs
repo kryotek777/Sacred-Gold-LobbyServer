@@ -45,6 +45,31 @@ internal static partial class LobbyServer
 
     public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == x.PermId);
 
+    /// <summary>
+    /// Retrieves a user from a partial name
+    /// Returns <see cref="null"/> if no matches are available or if there are multiple amiguous matches
+    /// </summary>
+    /// <param name="name">The partial name of the user</param>
+    /// <returns>The matching user or <see cref="null"/></returns>
+    public static SacredClient? GetUserFromPartialName(ReadOnlySpan<char> name)
+    {
+        SacredClient? value = null;
+        
+        foreach (var user in Users)
+        {
+            if(user.IsInChannel && user.clientName!.AsSpan().Contains(name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                // If we haven't got another match, save the result
+                if(value == null)
+                    value = user;
+                else // If we did, we're not returning anything
+                    return null;
+            }
+        }
+
+        return value;
+    }
+
     public static List<ServerInfo> GetAllServerInfos()
     {
         var serverList = Servers
@@ -160,14 +185,7 @@ internal static partial class LobbyServer
         {
             if(user.IsInChannel)
             {
-                var msg = new SacredChatMessage(
-                    SenderName: "",
-                    SenderPermId: 0,
-                    user.PermId,
-                    message
-                );
-
-                user.SendChatMessage(msg);
+                user.SendSystemMessage(message);
             }
         }    
     }
