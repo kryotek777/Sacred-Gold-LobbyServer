@@ -14,9 +14,9 @@ internal static partial class LobbyServer
 
 
     private static ConcurrentDictionary<uint, SacredClient> ClientDictionary { get; set; } = new();
-    private static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
-    private static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
-    private static IEnumerable<SacredClient> Servers =  Clients.Where(c => c.ClientType == ClientType.GameServer);
+    public static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
+    public static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
+    public static IEnumerable<SacredClient> Servers =  Clients.Where(c => c.ClientType == ClientType.GameServer);
 
     private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
     
@@ -26,6 +26,11 @@ internal static partial class LobbyServer
 
         tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
         tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
+
+        if(Config.Instance.EnableApi)
+        {
+            tasks.Add(WebApi.Run(Config.Instance.ApiListenUrl, cancellationTokenSource.Token));
+        }
 
         return Task.WhenAll(tasks);
     }

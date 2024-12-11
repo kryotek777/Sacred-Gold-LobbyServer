@@ -18,6 +18,8 @@ public class Config
     public List<string> ServerSeparators { get; set; }
     public uint ChatHistoryLimit { get; set; }
     public string AllowedUsernameRegex { get; set; }
+    public bool EnableApi { get; set; }
+    public string ApiListenUrl { get; set; } 
 
     public Config()
     {
@@ -30,6 +32,8 @@ public class Config
         ServerSeparators = new();
         ChatHistoryLimit = 0;
         AllowedUsernameRegex = ".*";
+        EnableApi = false;
+        ApiListenUrl = "";
     }
 
     public static bool Load([NotNullWhen(false)] out string? error)

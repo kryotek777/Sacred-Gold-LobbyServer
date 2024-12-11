@@ -1,9 +1,20 @@
+##############
+# NETWORKING #
+##############
 
 # The TCP port on which the lobby will listen.
 # Ensure that clients configure this port in their NETWORK_LOBBYPORT 
 # setting within both Settings.cfg and GameServer.cfg.
 
 Port = 7066
+
+EnableApi = true
+
+ApiListenUrl = "http://localhost:5000"
+
+###########
+# LOGGING #
+###########
 
 # The full or relative path to a text file on which the logs will be appended
 
@@ -14,12 +25,19 @@ LogPath = "./log.txt"
 
 LogLevel = "Info"
 
-# A message that will appear in a popoup the first time a client joins the lobby after starting the game.
+########
+# LOBBY #
+########
 
-MessageOfTheDay = '''
-Welcome player,
-thanks for playing with us!
-'''
+# Fake servers that will be sent in the server list to act as separators.
+# Servers are always ordered alphabetically by the client,
+# so try to be clever with your names to preserve ordering!
+
+ServerSeparators = [ "## Vanilla ##", "## Modded ##" ]
+
+########
+# CHAT #
+########
 
 # A message that will appear in the chat when the client joins a channel
 # If you're hosting a public lobby, you're kindly asked to 
@@ -36,16 +54,25 @@ Source: \cFFAA55FFhttps://github.com/kryotek777/Sacred-Gold-LobbyServer
 
 ChatHistoryLimit = 20
 
-# Fake servers that will be sent in the server list to act as separators.
-# Servers are always ordered alphabetically by the client,
-# so try to be clever with your names to preserve ordering!
-
-ServerSeparators = [ "## Vanilla ##", "## Modded ##" ]
+############
+# LOGIN #
+############
 
 # A Regular Expression defining what usernames are allowed
 # The default one is '^[\w-\\]+$' and allows letters, numbers, underscores (_), dashes (-) and backslashes (\, for colored names)
 
 AllowedUsernameRegex = '^[\w-\\]+$'
+
+# A message that will appear in a popoup the first time a client joins the lobby after starting the game.
+
+MessageOfTheDay = '''
+Welcome player,
+thanks for playing with us!
+'''
+
+############
+# SECURITY #
+############
 
 # Here you can ban people by their ip address
 # Bans can be of three types

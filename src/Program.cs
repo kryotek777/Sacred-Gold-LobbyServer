@@ -1,1 +1,1 @@
-﻿await Sacred.LobbyServer.Start(); 
+﻿await Sacred.LobbyServer.Start();
