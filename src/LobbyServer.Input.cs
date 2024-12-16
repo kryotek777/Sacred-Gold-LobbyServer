@@ -3,15 +3,28 @@ using Sacred.Networking.Types;
 namespace Sacred;
 internal static partial class LobbyServer
 {
-    private static void InputLoop()
+    private static async Task InputLoopAsync(CancellationToken cancToken)
     {
+        // Console.In still blocks with async methods
+        // This workaround enables us to free the thread that's waiting for input
+        // https://learn.microsoft.com/en-us/dotnet/api/system.console.in?view=net-8.0#remarks
+        using StreamReader consoleIn = new StreamReader(Console.OpenStandardInput());
+
         Log.Info("Started accepting commands. Type 'help' to learn more");
 
-        while (!cancellationTokenSource.IsCancellationRequested)
+        while (!cancToken.IsCancellationRequested)
         {
             try
             {
-                var line = Console.ReadLine()!;
+                var line = await consoleIn.ReadLineAsync(cancToken);
+
+                // EOF received, stop the server
+                if(line == null)
+                {
+                    Stop();
+                    break;
+                }
+
                 var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                 if (tokens.Length == 0)
@@ -94,6 +107,10 @@ internal static partial class LobbyServer
                         Console.WriteLine($"Unknown command '{tokens[0]}'");
                         break;
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
             catch (Exception ex)
             {

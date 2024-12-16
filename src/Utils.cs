@@ -16,17 +16,13 @@ internal static class Utils
         Windows1252Encoding = Encoding.GetEncoding(1252);
     }
 
-    public static Task RunTask(Action action, CancellationToken cancellationToken)
+    public static Task RunTask(Action<CancellationToken> action, CancellationToken token)
     {
-        return Task.Factory.StartNew(
-            action,
-            cancellationToken,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default
+        return Task.Run(
+            () => action(token),
+            token
         );
     }
-
-    public static Task RunTask(Action action) => RunTask(action, CancellationToken.None);
 
     public static void FromSpan<T>(ReadOnlySpan<byte> span, out T value) where T : unmanaged
     {

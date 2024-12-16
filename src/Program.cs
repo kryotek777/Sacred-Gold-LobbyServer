@@ -1,1 +1,5 @@
-﻿await Sacred.LobbyServer.Start(); 
+﻿using Sacred;
+
+await LobbyServer.Run();
+
+Log.Info("Exited");

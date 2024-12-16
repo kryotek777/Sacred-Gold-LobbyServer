@@ -7,7 +7,6 @@ namespace Sacred;
 
 internal static partial class LobbyServer
 {
-    private static readonly List<Task> tasks = new();
     private static readonly List<ServerInfo> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
@@ -20,12 +19,15 @@ internal static partial class LobbyServer
 
     private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
     
-    public static Task Start()
+    public static Task Run()
     {
         LoadConfig();
 
-        tasks.Add(Utils.RunTask(AcceptLoop, cancellationTokenSource.Token));
-        tasks.Add(Utils.RunTask(InputLoop, cancellationTokenSource.Token));
+        List<Task> tasks =
+        [
+            AcceptLoopAsync(cancellationTokenSource.Token),
+            InputLoopAsync(cancellationTokenSource.Token),
+        ];
 
         return Task.WhenAll(tasks);
     }
@@ -207,32 +209,38 @@ internal static partial class LobbyServer
         Log.Info("Config loaded!");
     }
 
-    private static async void AcceptLoop()
+    private static async Task AcceptLoopAsync(CancellationToken token)
     {
-        var listener = new TcpListener(IPAddress.Any, Config.Instance.Port);
-        listener.Start();
-
-        Log.Info("Started accepting clients");
-
-        while (!cancellationTokenSource.IsCancellationRequested)
+        try
         {
-            var socket = await listener.AcceptSocketAsync(cancellationTokenSource.Token);
-            var endPoint = (socket.RemoteEndPoint as IPEndPoint)!;
-            var remoteIp = endPoint.Address;
-
-            if (Config.Instance.IsBanned(remoteIp, BanType.Full))
+            var listener = new TcpListener(IPAddress.Any, Config.Instance.Port);
+            listener.Start();
+    
+            Log.Info("Started accepting clients");
+    
+            while (!token.IsCancellationRequested)
             {
-                Log.Info($"Connection refused from {remoteIp} because IP is banned");
-                socket.Close();
-                socket.Dispose();
-            }
-            else
-            {
-                var connId = ++connectionIdCounter;
-                var client = new SacredClient(socket, connId);
-                ClientDictionary[connId] = client;
-                client.Start();
-            }
+                var socket = await listener.AcceptSocketAsync(token);
+                var endPoint = (socket.RemoteEndPoint as IPEndPoint)!;
+                var remoteIp = endPoint.Address;
+    
+                if (Config.Instance.IsBanned(remoteIp, BanType.Full))
+                {
+                    Log.Info($"Connection refused from {remoteIp} because IP is banned");
+                    socket.Close();
+                    socket.Dispose();
+                }
+                else
+                {
+                    var connId = ++connectionIdCounter;
+                    var client = new SacredClient(socket, connId, token);
+                    ClientDictionary[connId] = client;
+                    client.Start();
+                }
+            }        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
     }
 

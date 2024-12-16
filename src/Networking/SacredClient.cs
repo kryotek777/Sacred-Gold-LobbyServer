@@ -21,9 +21,9 @@ public class SacredClient
     public int PermId => (int)ConnectionId;
 
     private SacredConnection connection;
-    public SacredClient(Socket socket, uint connectionId)
+    public SacredClient(Socket socket, uint connectionId, CancellationToken parentToken)
     {
-        connection = new SacredConnection(this, socket, connectionId);
+        connection = new SacredConnection(this, socket, connectionId, parentToken);
         ConnectionId = connectionId;
         ServerInfo = null;
         Profile = ProfileData.CreateEmpty(PermId);

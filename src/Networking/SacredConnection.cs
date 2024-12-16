@@ -56,29 +56,28 @@ public class SacredConnection
     /// <param name="client">The SacredClient that owns this connection</param>
     /// <param name="socket">An already connected socket to our client</param>
     /// <param name="connectionId">The LobbyServer provided id for TinCat communication with the client</param>
-    public SacredConnection(SacredClient client, Socket socket, uint connectionId)
+    public SacredConnection(SacredClient client, Socket socket, uint connectionId, CancellationToken parentToken)
     {
         Client = client;
         ConnectionId = connectionId;
         Socket = socket;
         ClientType = ClientType.Unknown;
-        CancellationTokenSource = new();
+        CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentToken);
         SendQueue = new();
 
         Stream = new(socket);
         ReadTask = null;
         WriteTask = null;
         Started = false;
-
-        socket.SendTimeout = 60000;
-        socket.ReceiveTimeout = 60000;
     }
 
     public void Start()
     {
+        // Unfortunately Span<T> isn't usable in an async context yet
+        // This will run stuff synchronously in a separate thread for now
         var token = CancellationTokenSource.Token;
-        ReadTask = Utils.RunTask(() => ReadLoop(token), token);
-        WriteTask = Utils.RunTask(() => WriteLoop(token), token);
+        ReadTask = Utils.RunTask(ReadLoop, token);
+        WriteTask = Utils.RunTask(WriteLoop, token);
         Started = true;
     }
 
@@ -89,9 +88,6 @@ public class SacredConnection
             Started = false;
             CancellationTokenSource.Cancel();
             Client.Stop();
-            Task.WaitAll(ReadTask, WriteTask);
-            ReadTask = null;
-            WriteTask = null;
         }
     }
 
@@ -127,9 +123,9 @@ public class SacredConnection
                 }
             }
         }
-        catch (TimeoutException)
+        catch (OperationCanceledException)
         {
-
+            return;
         }
         catch (EndOfStreamException)
         {
@@ -152,13 +148,13 @@ public class SacredConnection
         {
             while (!token.IsCancellationRequested && Socket.Connected)
             {
-                var (type, data) = SendQueue.Take();
+                var (type, data) = SendQueue.Take(token);
                 SendSacredPacket(type, data);
             }
         }
-        catch (TimeoutException)
+        catch (OperationCanceledException)
         {
-
+            return;
         }
         catch (EndOfStreamException)
         {
