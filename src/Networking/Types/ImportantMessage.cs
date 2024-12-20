@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record ImportantMessage(bool ShowPopup, string Message, int DestinationPermId) : ISerializable<ImportantMessage>
 {

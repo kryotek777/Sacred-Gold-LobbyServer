@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
-namespace Sacred;
+namespace Lobby;
 
 public static class StreamExtensions
 {

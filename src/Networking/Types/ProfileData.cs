@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// <para> Public information about a player's profile </para>
@@ -42,29 +42,29 @@ public record ProfileData(
         var ShowEmail = reader.ReadBoolean();
         var SelectedCharacterSlot = reader.ReadByte();
         var CharactersNames = new string[CharacterNamesCount];
-        
+
         for (int i = 0; i < CharacterNamesCount; i++)
         {
             CharactersNames[i] = Utils.Utf16ToString(reader.ReadBytes(Constants.Utf16ProfileStringLength));
         }
-        
+
         var SelectedCharacter = CharacterPreview.Deserialize(reader.ReadAll());
 
         return new ProfileData(
-            Version, 
-            Account, 
-            Name, 
-            Nick, 
-            Clan, 
-            Page, 
-            Icq, 
-            Text, 
-            Email, 
-            PermId, 
-            ConnectionSpeed, 
-            ShowEmail, 
+            Version,
+            Account,
+            Name,
+            Nick,
+            Clan,
+            Page,
+            Icq,
+            Text,
+            Email,
+            PermId,
+            ConnectionSpeed,
+            ShowEmail,
             SelectedCharacterSlot,
-            CharactersNames, 
+            CharactersNames,
             SelectedCharacter
         );
     }
@@ -86,7 +86,7 @@ public record ProfileData(
         stream.Write(ConnectionSpeed);
         stream.Write(ShowEmail);
         stream.Write((byte)SelectedCharacterSlot);
-        
+
         for (int i = 0; i < CharactersNames.Length; i++)
         {
             stream.Write(Utils.StringToUtf16(CharactersNames[i], Constants.Utf16ProfileStringLength));
@@ -99,20 +99,20 @@ public record ProfileData(
 
     public static ProfileData CreateEmpty(int permId) =>
     new ProfileData(
-            Version: 4, 
-            "Account", 
-            "Name", 
-            "Nick", 
-            "Clan", 
-            "Page", 
-            "Icq", 
-            "Text", 
-            "Email", 
-            permId, 
-            ConnectionSpeed: 0, 
-            ShowEmail: false, 
+            Version: 4,
+            "Account",
+            "Name",
+            "Nick",
+            "Clan",
+            "Page",
+            "Icq",
+            "Text",
+            "Email",
+            permId,
+            ConnectionSpeed: 0,
+            ShowEmail: false,
             SelectedCharacterSlot: 0,
-            CharactersNames: ["", "", "", "", "", "", "", ""], 
+            CharactersNames: ["", "", "", "", "", "", "", ""],
             SelectedCharacter: CharacterPreview.Empty
     );
 }

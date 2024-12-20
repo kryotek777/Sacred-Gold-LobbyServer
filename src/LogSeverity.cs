@@ -1,4 +1,4 @@
-namespace Sacred;
+namespace Lobby;
 
 public enum LogSeverity
 {

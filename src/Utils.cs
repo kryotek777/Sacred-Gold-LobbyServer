@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
-namespace Sacred;
+namespace Lobby;
 
 internal static class Utils
 {
@@ -103,7 +103,7 @@ internal static class Utils
     {
         var buf = new byte[length];
 
-        if(Windows1252Encoding.GetByteCount(str) > length)
+        if (Windows1252Encoding.GetByteCount(str) > length)
         {
             Log.Error($"The string '{str}' doesn't fit in {length} bytes and will be cut off, this is a bug!");
         }
@@ -116,7 +116,7 @@ internal static class Utils
     {
         var buf = new byte[length];
         Encoding.Unicode.GetBytes(str, buf);
-        return buf;    
+        return buf;
     }
 
     public static string Utf16ToString(ReadOnlySpan<byte> data)
@@ -151,7 +151,7 @@ internal static class Utils
 
         return result;
     }
-    
+
     public static byte[] ZLibCompress(byte[] data)
     {
         using (var memoryStream = new MemoryStream())

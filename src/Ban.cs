@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Sacred;
+namespace Lobby;
 
 public class Ban
 {

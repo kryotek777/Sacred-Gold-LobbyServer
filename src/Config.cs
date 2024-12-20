@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using Tomlyn;
 
-namespace Sacred;
+namespace Lobby;
 
 public class Config
 {

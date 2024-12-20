@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// <para> Requests public data about a client (Profile information or character savegames) </para>

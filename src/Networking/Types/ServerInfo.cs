@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// Generic answer to a message
@@ -36,7 +36,7 @@ public record ServerInfo(
         var NetworkProtocolVersion = reader.ReadUInt32();
         var ClientGameVersion = reader.ReadUInt32();
         var ChannelId = reader.ReadInt32();
-        
+
         return new ServerInfo(Name, LocalIp, ExternalIp, Port, CurrentPlayers, MaxPlayers, Flags, ServerId, NetworkProtocolVersion, ClientGameVersion, ChannelId);
     }
 

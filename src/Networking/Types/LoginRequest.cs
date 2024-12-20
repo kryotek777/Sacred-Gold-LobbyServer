@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// <para> The client requested to log into the lobbyserver </para>

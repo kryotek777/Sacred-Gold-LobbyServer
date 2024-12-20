@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record MessageOfTheDay(ushort Id, string Message) : ISerializable<MessageOfTheDay>
 {
@@ -10,7 +10,7 @@ public record MessageOfTheDay(ushort Id, string Message) : ISerializable<Message
         var length = reader.ReadUInt16();
         reader.Position += 128;
         var message = Utils.Win1252ToString(reader.ReadBytes(length));
-        
+
         return new MessageOfTheDay(id, message);
     }
 

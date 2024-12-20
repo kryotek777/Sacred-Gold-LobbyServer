@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using Sacred.Networking;
-using Sacred.Networking.Types;
-namespace Sacred;
+using Lobby.Networking;
+using Lobby.Networking.Types;
+namespace Lobby;
 
 internal static partial class LobbyServer
 {
@@ -15,10 +15,10 @@ internal static partial class LobbyServer
     private static ConcurrentDictionary<uint, SacredClient> ClientDictionary { get; set; } = new();
     private static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
     private static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
-    private static IEnumerable<SacredClient> Servers =  Clients.Where(c => c.ClientType == ClientType.GameServer);
+    private static IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.GameServer);
 
     private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
-    
+
     public static Task Run()
     {
         LoadConfig();
@@ -56,13 +56,13 @@ internal static partial class LobbyServer
     public static SacredClient? GetUserFromPartialName(ReadOnlySpan<char> name)
     {
         SacredClient? value = null;
-        
+
         foreach (var user in Users)
         {
-            if(user.IsInChannel && user.clientName!.AsSpan().Contains(name, StringComparison.InvariantCultureIgnoreCase))
+            if (user.IsInChannel && user.clientName!.AsSpan().Contains(name, StringComparison.InvariantCultureIgnoreCase))
             {
                 // If we haven't got another match, save the result
-                if(value == null)
+                if (value == null)
                     value = user;
                 else // If we did, we're not returning anything
                     return null;
@@ -88,27 +88,27 @@ internal static partial class LobbyServer
     {
         foreach (var user in Users)
         {
-            if(user.IsInChannel)
+            if (user.IsInChannel)
                 user.SendProfileData(profile);
-        }    
+        }
     }
 
     public static void BroadcastServerInfo(ServerInfo info)
     {
         foreach (var user in Users)
         {
-            if(user.IsInChannel)
+            if (user.IsInChannel)
                 user.UpdateServerInfo(info);
-        }    
+        }
     }
 
     public static void RemoveServer(ServerInfo info)
     {
         foreach (var user in Users)
         {
-            if(user.IsInChannel)
+            if (user.IsInChannel)
                 user.RemoveServer(info);
-        }    
+        }
     }
 
     /// <summary>
@@ -118,9 +118,9 @@ internal static partial class LobbyServer
     public static void BroadcastChatMessage(SacredChatMessage chatMessage)
     {
         var maxHistory = Config.Instance.ChatHistoryLimit;
-        if(maxHistory > 0)
+        if (maxHistory > 0)
         {
-            if(ChatHistory.Count == maxHistory)
+            if (ChatHistory.Count == maxHistory)
                 ChatHistory.TryDequeue(out _);
 
             ChatHistory.Enqueue(chatMessage);
@@ -128,7 +128,7 @@ internal static partial class LobbyServer
 
         foreach (var user in Users)
         {
-            if(user.IsInChannel && user.PermId != chatMessage.SenderPermId)
+            if (user.IsInChannel && user.PermId != chatMessage.SenderPermId)
                 user.SendChatMessage(chatMessage with { DestinationPermId = user.PermId });
         }
     }
@@ -139,20 +139,20 @@ internal static partial class LobbyServer
     /// <param name="joining">The user that's joining the channel</param>
     public static void UserJoinedChannel(SacredClient joining)
     {
-        lock(joining._lock)
+        lock (joining._lock)
         {
             foreach (var user in Users)
             {
-                if(user.IsInChannel && user.ConnectionId != joining.ConnectionId)
+                if (user.IsInChannel && user.ConnectionId != joining.ConnectionId)
                 {
                     // I know there's a specific message to notify that a user has joined a channel!
                     // But just sending the profile data works anyway, saves us a packet and prevents flickering in the user list!
-                    
+
                     // Send our data to the other client
                     user.SendProfileData(joining.Profile);
-                    
+
                     // Send us the client's data
-                    lock(user._lock)
+                    lock (user._lock)
                         joining.SendProfileData(user.Profile);
                 }
             }
@@ -174,7 +174,7 @@ internal static partial class LobbyServer
     {
         foreach (var user in Users)
         {
-            if(user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
+            if (user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
                 user.OtherUserLeftChannel(leaving.PermId);
         }
 
@@ -185,11 +185,11 @@ internal static partial class LobbyServer
     {
         foreach (var user in Users)
         {
-            if(user.IsInChannel)
+            if (user.IsInChannel)
             {
                 user.SendSystemMessage(message);
             }
-        }    
+        }
     }
 
     private static void LoadConfig()
@@ -201,11 +201,11 @@ internal static partial class LobbyServer
         Log.Initialize(Config.Instance.LogLevel, Config.Instance.LogPath);
 
         // Show the previous error
-        if(!loadedDefaults)
+        if (!loadedDefaults)
             Log.Error(error!);
 
         BuildSeparators();
-        
+
         Log.Info("Config loaded!");
     }
 
@@ -215,15 +215,15 @@ internal static partial class LobbyServer
         {
             var listener = new TcpListener(IPAddress.Any, Config.Instance.Port);
             listener.Start();
-    
+
             Log.Info("Started accepting clients");
-    
+
             while (!token.IsCancellationRequested)
             {
                 var socket = await listener.AcceptSocketAsync(token);
                 var endPoint = (socket.RemoteEndPoint as IPEndPoint)!;
                 var remoteIp = endPoint.Address;
-    
+
                 if (Config.Instance.IsBanned(remoteIp, BanType.Full))
                 {
                     Log.Info($"Connection refused from {remoteIp} because IP is banned");
@@ -237,7 +237,8 @@ internal static partial class LobbyServer
                     ClientDictionary[connId] = client;
                     client.Start();
                 }
-            }        }
+            }
+        }
         catch (OperationCanceledException)
         {
             return;

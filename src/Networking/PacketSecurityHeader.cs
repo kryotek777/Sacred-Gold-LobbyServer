@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record struct PacketSecurityHeader(SacredMsgType Type, uint SecurityKey, int Length, uint Checksum)
 {

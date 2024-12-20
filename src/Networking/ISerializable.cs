@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public interface ISerializable<T> where T : ISerializable<T>
 {

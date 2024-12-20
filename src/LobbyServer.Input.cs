@@ -1,6 +1,6 @@
-using Sacred.Networking.Types;
+using Lobby.Networking.Types;
 
-namespace Sacred;
+namespace Lobby;
 internal static partial class LobbyServer
 {
     private static async Task InputLoopAsync(CancellationToken cancToken)
@@ -19,7 +19,7 @@ internal static partial class LobbyServer
                 var line = await consoleIn.ReadLineAsync(cancToken);
 
                 // EOF received, stop the server
-                if(line == null)
+                if (line == null)
                 {
                     Stop();
                     break;
@@ -63,11 +63,11 @@ internal static partial class LobbyServer
                         break;
 
                     case "kick":
-                    {
-                        if (int.TryParse(tokens[1], out var client))
-                            Kick(client);
-                    }
-                    break;
+                        {
+                            if (int.TryParse(tokens[1], out var client))
+                                Kick(client);
+                        }
+                        break;
 
                     case "reload":
                         LoadConfig();
@@ -79,9 +79,9 @@ internal static partial class LobbyServer
                                 int.TryParse(tokens[1], out var client) &&
                                 int.TryParse(tokens[2], out var room)
                             )
-                            DebugJoinRoom(client, room);
+                                DebugJoinRoom(client, room);
                         }
-                    break;
+                        break;
 
                     case "dbg_lobby_result":
                         {
@@ -90,18 +90,18 @@ internal static partial class LobbyServer
                                 int.TryParse(tokens[2], out var message) &&
                                 int.TryParse(tokens[3], out var result)
                             )
-                            DebugLobbyResult(client, message, result);
+                                DebugLobbyResult(client, message, result);
                         }
-                    break;
+                        break;
 
                     case "dbg_server_list":
                         {
                             if (
                                 int.TryParse(tokens[1], out var client)
                             )
-                            DebugServerList(client);
+                                DebugServerList(client);
                         }
-                    break;
+                        break;
 
                     default:
                         Console.WriteLine($"Unknown command '{tokens[0]}'");

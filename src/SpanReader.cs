@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 
-namespace Sacred;
+namespace Lobby;
 
 public ref struct SpanReader
 {
     public ReadOnlySpan<byte> Span { get; private init; }
     public int Position { get; set; }
-    
+
     public SpanReader(ReadOnlySpan<byte> Span)
     {
         this.Span = Span;
@@ -24,7 +24,7 @@ public ref struct SpanReader
     {
         var result = Span[Position] != 0;
         Position += sizeof(bool);
-        return result;    
+        return result;
     }
 
     public byte ReadByte()

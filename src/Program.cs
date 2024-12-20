@@ -1,4 +1,4 @@
-﻿using Sacred;
+﻿using Lobby;
 
 await LobbyServer.Run();
 

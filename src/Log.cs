@@ -1,4 +1,4 @@
-namespace Sacred;
+namespace Lobby;
 
 internal static class Log
 {
@@ -15,14 +15,14 @@ internal static class Log
     {
         LogLevel = logLevel;
 
-        if(logPath != null)
+        if (logPath != null)
         {
             try
             {
                 logFile?.Dispose();
                 logFile = new StreamWriter(File.Open(logPath, FileMode.OpenOrCreate));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Error($"Error opening log file at path '{logPath}': {ex.Message}");
             }

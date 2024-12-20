@@ -2,9 +2,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
-using Sacred.Networking.Types;
+using Lobby.Networking.Types;
 
-namespace Sacred.Networking;
+namespace Lobby.Networking;
 
 /// <summary>
 /// Handles all the networking logistics for a SacredClient.
@@ -24,7 +24,7 @@ public class SacredConnection
     /// <summary>
     /// An already open socket connection our client.
     /// </summary>
-    private Socket Socket { get; init;}
+    private Socket Socket { get; init; }
 
     /// <summary>
     /// Data stream to our client.
@@ -83,7 +83,7 @@ public class SacredConnection
 
     public void Stop()
     {
-        if(Started)
+        if (Started)
         {
             Started = false;
             CancellationTokenSource.Cancel();
@@ -104,7 +104,7 @@ public class SacredConnection
             {
                 var error = ReadPacket();
 
-                if(error != PacketError.None)
+                if (error != PacketError.None)
                 {
                     var message = error switch
                     {
@@ -168,7 +168,7 @@ public class SacredConnection
         {
             Log.Error($"Exception while writing packet: {ex}");
             Stop();
-        }    
+        }
     }
 
     private PacketError ReadPacket()
@@ -264,7 +264,7 @@ public class SacredConnection
         )
         {
             var response = new LogOn(Client.ConnectionId);
-            
+
             Span<byte> data = stackalloc byte[52];
             response.Serialize(data);
 

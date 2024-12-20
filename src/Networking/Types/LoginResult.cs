@@ -1,7 +1,7 @@
 
 using System.Net;
 
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// <para> The lobbyserver answers a <see cref="LoginRequest"/> </para>

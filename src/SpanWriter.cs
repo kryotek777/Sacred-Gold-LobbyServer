@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices;
 
-namespace Sacred;
+namespace Lobby;
 
 
 public ref struct SpanWriter
 {
     public Span<byte> Span { get; private init; }
     public int Position { get; set; }
-    
+
     public SpanWriter(Span<byte> Span)
     {
         this.Span = Span;

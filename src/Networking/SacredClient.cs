@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using Sacred.Networking.Types;
+using Lobby.Networking.Types;
 
-namespace Sacred.Networking;
+namespace Lobby.Networking;
 
 public class SacredClient
 {
@@ -38,11 +38,11 @@ public class SacredClient
 
     public void Stop()
     {
-        if(ClientType == ClientType.GameClient)
+        if (ClientType == ClientType.GameClient)
         {
             OnChannelLeaveRequest();
         }
-        else if(ClientType == ClientType.GameServer)
+        else if (ClientType == ClientType.GameServer)
         {
             OnServerLogout();
         }
@@ -69,97 +69,97 @@ public class SacredClient
         switch (type)
         {
             case SacredMsgType.ClientLoginRequest:
-            {
-                var request = LoginRequest.Deserialize(payload);
-                OnClientLoginRequest(request);
-            }
-            break;
+                {
+                    var request = LoginRequest.Deserialize(payload);
+                    OnClientLoginRequest(request);
+                }
+                break;
 
             case SacredMsgType.ServerLoginRequest:
-            {
-                var serverInfo = ServerInfo.Deserialize(payload);
-                OnServerLoginRequest(serverInfo);    
-            }
-            break;
+                {
+                    var serverInfo = ServerInfo.Deserialize(payload);
+                    OnServerLoginRequest(serverInfo);
+                }
+                break;
             case SacredMsgType.ServerChangePublicInfo:
-            {
-                var serverInfo = ServerInfo.Deserialize(payload);
-                OnServerChangePublicInfo(serverInfo);    
-            }
-            break;
+                {
+                    var serverInfo = ServerInfo.Deserialize(payload);
+                    OnServerChangePublicInfo(serverInfo);
+                }
+                break;
             case SacredMsgType.ClientCharacterSelect:
-            {
-                var blockId = reader.ReadUInt16();
-                OnClientCharacterSelect(blockId);
-            }
-            break;
+                {
+                    var blockId = reader.ReadUInt16();
+                    OnClientCharacterSelect(blockId);
+                }
+                break;
             case SacredMsgType.ReceiveChatMessage:
-            {
-                var message = SacredChatMessage.Deserialize(payload);
-                OnClientChatMessage(message);
-            }
-            break;
+                {
+                    var message = SacredChatMessage.Deserialize(payload);
+                    OnClientChatMessage(message);
+                }
+                break;
             case SacredMsgType.ReceivePublicData:
-            {
-                var data = PublicData.Deserialize(payload);
-                OnReceivePublicData(data);
-            }
-            break;
+                {
+                    var data = PublicData.Deserialize(payload);
+                    OnReceivePublicData(data);
+                }
+                break;
             case SacredMsgType.PublicDataRequest:
-            {
-                var request = PublicDataRequest.Deserialize(payload);
-                OnPublicDataRequest(request);
-            }
-            break;
+                {
+                    var request = PublicDataRequest.Deserialize(payload);
+                    OnPublicDataRequest(request);
+                }
+                break;
             case SacredMsgType.ServerListRequest:
-            {
-                var request = ServerListRequest.Deserialize(payload);
-                OnServerListRequest(request);
-            }
-            break;
+                {
+                    var request = ServerListRequest.Deserialize(payload);
+                    OnServerListRequest(request);
+                }
+                break;
             case SacredMsgType.ChannelJoinRequest:
-            {
-                var channel = (int)reader.ReadUInt16();
-                OnChannelJoinRequest(channel);
-            }
-            break;            
+                {
+                    var channel = (int)reader.ReadUInt16();
+                    OnChannelJoinRequest(channel);
+                }
+                break;
             case SacredMsgType.ChannelLeaveRequest:
-            {
-                OnChannelLeaveRequest();
-            }
-            break;
+                {
+                    OnChannelLeaveRequest();
+                }
+                break;
             case SacredMsgType.MessageOfTheDayRequest:
-            {
-                var id = reader.ReadUInt16();
-                OnMessageOfTheDayRequest(id);
-            }
-            break;
+                {
+                    var id = reader.ReadUInt16();
+                    OnMessageOfTheDayRequest(id);
+                }
+                break;
             case SacredMsgType.UserJoinedServer:
-            {
-                var permId = reader.ReadInt32();
-                var blockId = reader.ReadUInt16();
+                {
+                    var permId = reader.ReadInt32();
+                    var blockId = reader.ReadUInt16();
 
-                OnUserJoinedServer(permId);
-            }
-            break;
+                    OnUserJoinedServer(permId);
+                }
+                break;
             case SacredMsgType.UserLeftServer:
-            {
-                //NO-OP
-            }
-            break;
+                {
+                    //NO-OP
+                }
+                break;
             case SacredMsgType.ServerLogout:
-            {
-                OnServerLogout();
-            }
-            break;
+                {
+                    OnServerLogout();
+                }
+                break;
             default:
-            {
-                if (Enum.IsDefined(type))
-                    Log.Error($"Unimplemented packet {type}");
-                else
-                    Log.Error($"Unknown packet {(int)type}");
-            }
-            break;
+                {
+                    if (Enum.IsDefined(type))
+                        Log.Error($"Unimplemented packet {type}");
+                    else
+                        Log.Error($"Unknown packet {(int)type}");
+                }
+                break;
         }
 
         SendLobbyResult(LobbyResults.Ok, type);
@@ -168,7 +168,7 @@ public class SacredClient
     #region OnSacred
     public void OnChannelLeaveRequest()
     {
-        if(Channel != -1)
+        if (Channel != -1)
         {
             Channel = -1;
             LobbyServer.UserLeftChannel(this);
@@ -177,7 +177,7 @@ public class SacredClient
 
     public void OnServerLogout()
     {
-        lock(_lock)
+        lock (_lock)
             LobbyServer.RemoveServer(ServerInfo!);
     }
 
@@ -185,16 +185,16 @@ public class SacredClient
     {
         var client = LobbyServer.GetClientFromPermId(permId);
 
-        if(client != null)
+        if (client != null)
         {
-            lock(client._lock)
-            lock(_lock)
-            {
-                var accName = client.clientName;
-                var charName = client.Profile.SelectedCharacter.Name;
-                var gameName = ServerInfo!.Name;
-                LobbyServer.BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");
-            }
+            lock (client._lock)
+                lock (_lock)
+                {
+                    var accName = client.clientName;
+                    var charName = client.Profile.SelectedCharacter.Name;
+                    var gameName = ServerInfo!.Name;
+                    LobbyServer.BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");
+                }
 
             Log.Info($"{client.GetPrintableName()} joined {GetPrintableName()}");
         }
@@ -225,18 +225,18 @@ public class SacredClient
 
     private void OnPublicDataRequest(PublicDataRequest request)
     {
-        if(request.BlockId == Constants.ProfileBlockId)
-        {          
+        if (request.BlockId == Constants.ProfileBlockId)
+        {
             var client = LobbyServer.GetClientFromPermId(request.PermId);
 
-            if(client != null)
+            if (client != null)
             {
                 ProfileData data;
 
-                lock(client._lock)
+                lock (client._lock)
                 {
                     data = client.Profile;
-                }            
+                }
 
                 SendProfileData(client.Profile);
             }
@@ -247,7 +247,7 @@ public class SacredClient
 
             }
         }
-        else if(request.BlockId <= 8)
+        else if (request.BlockId <= 8)
         {
             Log.Error($"{GetPrintableName()} Character requests aren't implemented yet!");
             SendLobbyResult(LobbyResults.InternalError, SacredMsgType.PublicDataRequest);
@@ -263,9 +263,9 @@ public class SacredClient
     private void OnReceivePublicData(PublicData publicData)
     {
         //The lobby received the client's profile data
-        if(publicData.PermId == PermId && publicData.BlockId == Constants.ProfileBlockId)
+        if (publicData.PermId == PermId && publicData.BlockId == Constants.ProfileBlockId)
         {
-            lock(_lock)
+            lock (_lock)
             {
                 Profile = publicData.ReadProfileData();
             }
@@ -274,9 +274,9 @@ public class SacredClient
             SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
 
             //Update the data for all clients
-            if(IsInChannel)
+            if (IsInChannel)
             {
-                lock(_lock)
+                lock (_lock)
                     LobbyServer.BroadcastProfile(Profile);
             }
         }
@@ -285,7 +285,7 @@ public class SacredClient
 
     public void OnClientLoginRequest(LoginRequest loginRequest)
     {
-        if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
+        if (Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ClientOnly) == true)
         {
             Log.Info($"{GetPrintableName()} tried to log in as an user but was refused because it's banned");
             Stop();
@@ -297,7 +297,7 @@ public class SacredClient
 
         // Check for the name's validity
         clientName = loginRequest.Username;
-        if(Regex.IsMatch(clientName, Config.Instance.AllowedUsernameRegex))
+        if (Regex.IsMatch(clientName, Config.Instance.AllowedUsernameRegex))
         {
             // We now know that a User is connecting
             connection.ClientType = ClientType.GameClient;
@@ -312,7 +312,7 @@ public class SacredClient
             SendPacket(SacredMsgType.ClientLoginResult, loginResult);
             SendLobbyResult(LobbyResults.Ok, SacredMsgType.ClientLoginRequest);
 
-            Log.Info($"{GetPrintableName()} logged in as an user!");        
+            Log.Info($"{GetPrintableName()} logged in as an user!");
         }
         else
         {
@@ -327,18 +327,18 @@ public class SacredClient
 
             SendImportantMessage("Your username is not allowed! Please choose a different one");
 
-            Log.Info($"{GetPrintableName()} tried to login with an invalid username {clientName}");        
+            Log.Info($"{GetPrintableName()} tried to login with an invalid username {clientName}");
         }
     }
 
     private void OnServerLoginRequest(ServerInfo serverInfo)
     {
-        if(Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
+        if (Config.Instance.IsBanned(connection.RemoteEndPoint.Address, BanType.ServerOnly) == true)
         {
             Log.Info($"{GetPrintableName()} tried to log in as a server but was refused because it's banned");
             Stop();
             return;
-        }  
+        }
 
         Log.Trace($"{GetPrintableName()} logs in as server");
 
@@ -360,7 +360,7 @@ public class SacredClient
         //Accept the login
         SendPacket(SacredMsgType.ServerLoginResult, externalIP.GetAddressBytes());
 
-        lock(_lock)
+        lock (_lock)
         {
             //Correct the server's info and save it
             ServerInfo = serverInfo with
@@ -382,7 +382,7 @@ public class SacredClient
 
     private void OnServerChangePublicInfo(ServerInfo newInfo)
     {
-        lock(_lock)
+        lock (_lock)
         {
             ServerInfo = ServerInfo! with
             {
@@ -392,14 +392,14 @@ public class SacredClient
             };
 
             LobbyServer.BroadcastServerInfo(ServerInfo);
-            
+
             Log.Info($"GameServer {GetPrintableName()} changed public info {ServerInfo.CurrentPlayers}/{ServerInfo.MaxPlayers} {ServerInfo.Flags}");
         }
     }
 
     public void OnClientCharacterSelect(ushort blockId)
     {
-        
+
     }
 
     private void OnClientChatMessage(SacredChatMessage message)
@@ -408,17 +408,17 @@ public class SacredClient
         message.Deconstruct(out var _, out var _, out var destinationPermId, out var text);
 
         // Handle whisper messages
-        if(text.StartsWith("/w"))
+        if (text.StartsWith("/w"))
         {
             // Explained here: https://regex101.com/r/siaVkb/1
             var match = Regex.Match(text, @"\/w\s+(?<name>.*?)\s+(?<message>.*)");
 
-            if(match.Success)
+            if (match.Success)
             {
                 var name = match.Groups["name"].ValueSpan;
                 var user = LobbyServer.GetUserFromPartialName(name);
 
-                if(user != null)
+                if (user != null)
                 {
                     text = match.Groups["message"].Value;
 
@@ -467,15 +467,15 @@ public class SacredClient
         {
             SendPacket(SacredMsgType.SendServerInfo, info);
         }
-    }   
+    }
 
     public void JoinChannel(int channel)
     {
         // TODO: When fully implementing channels, we need to leave the one we're actually in
-        if(Channel != channel)
+        if (Channel != channel)
         {
             Channel = channel;
-            
+
             SendPacket(SacredMsgType.UserJoinChannel, BitConverter.GetBytes(channel));
 
             SendChannelChatMessage();
@@ -540,7 +540,7 @@ public class SacredClient
                 from: string.Empty,     //No sender name
                 message: line,          //Message
                 senderId: 0             //From System (red text)
-            );        
+            );
         }
     }
 }

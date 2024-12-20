@@ -1,4 +1,4 @@
-using Sacred.Networking.Types;
+using Lobby.Networking.Types;
 
 public record struct PacketSecurityData(SacredMsgType Type, int Length, uint SecurityKey, bool DynamicSize, bool FromClient, bool FromServer, bool FromUnknown)
 {

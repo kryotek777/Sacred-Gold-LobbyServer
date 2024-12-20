@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record struct TincatHeader(uint Magic, uint Source, uint Destination, TincatMsgType Type, uint Unknown, int Length, uint Checksum)
 {

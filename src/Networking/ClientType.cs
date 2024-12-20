@@ -1,4 +1,4 @@
-namespace Sacred.Networking;
+namespace Lobby.Networking;
 
 public enum ClientType
 {

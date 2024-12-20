@@ -1,8 +1,8 @@
-using Sacred.Networking.Types;
+using Lobby.Networking.Types;
 
-namespace Sacred.Networking;
+namespace Lobby.Networking;
 
 public record TincatPacket(TincatHeader Header, byte[] Payload)
 {
-    
+
 }

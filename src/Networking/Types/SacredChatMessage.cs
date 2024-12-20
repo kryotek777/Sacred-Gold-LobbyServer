@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record SacredChatMessage
 (
@@ -20,7 +20,7 @@ public record SacredChatMessage
         var DestinationPermId = reader.ReadInt32();
         var Message = Utils.Win1252ToString(reader.ReadBytes(Constants.ChatMessageMaxLength));
 
-        return new SacredChatMessage(SenderName, SenderPermId, DestinationPermId, Message);      
+        return new SacredChatMessage(SenderName, SenderPermId, DestinationPermId, Message);
     }
 
     public byte[] Serialize()

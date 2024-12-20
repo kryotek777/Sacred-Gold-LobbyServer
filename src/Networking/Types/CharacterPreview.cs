@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 public record CharacterPreview(
     uint Level,
@@ -29,7 +29,7 @@ public record CharacterPreview(
 
         var Level = reader.ReadUInt32();
         var Type = reader.ReadUInt32();
-        var Name = Utils.Utf16ToString(reader.ReadBytes(64*2));
+        var Name = Utils.Utf16ToString(reader.ReadBytes(64 * 2));
         var EquippedItemCount = reader.ReadUInt32();
         var EquippedItems = new uint[24];
 
@@ -51,7 +51,7 @@ public record CharacterPreview(
         var CreationMonth = reader.ReadByte();
         reader.ReadBytes(5);    // Reserved
 
-        var Effects = reader.ReadBytes(12*24).ToArray();
+        var Effects = reader.ReadBytes(12 * 24).ToArray();
 
         return new CharacterPreview(
             Level,
@@ -79,7 +79,7 @@ public record CharacterPreview(
 
         stream.Write(Level);
         stream.Write(Type);
-        stream.Write(Utils.StringToUtf16(Name, 64*2));
+        stream.Write(Utils.StringToUtf16(Name, 64 * 2));
         stream.Write(EquippedItemCount);
 
         Debug.Assert(EquippedItems.Length == 24);

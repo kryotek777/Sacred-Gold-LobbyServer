@@ -1,4 +1,4 @@
-namespace Sacred.Networking.Types;
+namespace Lobby.Networking.Types;
 
 /// <summary>
 /// <para> Represents a block of public data, the contents and format depend on the BlockId </para>

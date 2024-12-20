@@ -1,4 +1,4 @@
-namespace Sacred;
+namespace Lobby;
 
 internal static class CRC32
 {
