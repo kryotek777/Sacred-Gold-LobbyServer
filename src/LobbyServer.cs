@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using Lobby.Networking;
 using Lobby.Networking.Types;
 namespace Lobby;
@@ -11,12 +12,11 @@ internal static partial class LobbyServer
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
 
-
-    private static ConcurrentDictionary<uint, SacredClient> ClientDictionary { get; set; } = new();
-    private static IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
-    private static IEnumerable<SacredClient> Users => Clients.Where(c => c.ClientType == ClientType.GameClient);
-    private static IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.GameServer);
-
+    private static readonly ConcurrentDictionary<uint, SacredClient> ClientDictionary = new();
+    private static readonly IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
+    private static readonly IEnumerable<SacredClient> Users = Clients.Where(c => c.ClientType == ClientType.GameClient);
+    private static readonly IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.GameServer);
+    private static readonly Channel<SacredPacket> ReceivedPackets = Channel.CreateUnbounded<SacredPacket>();
     private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
 
     public static Task Run()
@@ -27,6 +27,7 @@ internal static partial class LobbyServer
         [
             AcceptLoopAsync(cancellationTokenSource.Token),
             InputLoopAsync(cancellationTokenSource.Token),
+            ProcessLoopAsync(cancellationTokenSource.Token)
         ];
 
         return Task.WhenAll(tasks);
@@ -37,6 +38,12 @@ internal static partial class LobbyServer
         Log.Info("Exiting...");
 
         cancellationTokenSource.Cancel();
+    }
+
+    public static void ReceivePacket(SacredPacket packet)
+    {
+        // No need to check the returned bool, this will always succeed with an unbounded channel
+        ReceivedPackets.Writer.TryWrite(packet);
     }
 
     public static void RemoveClient(SacredClient client)
@@ -261,5 +268,24 @@ internal static partial class LobbyServer
             ClientGameVersion: 0,
             ChannelId: 0
         )));
+    }
+
+    private static async Task ProcessLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            var reader = ReceivedPackets.Reader;
+
+            while (!token.IsCancellationRequested)
+            {
+                var packet = await reader.ReadAsync(token);
+                packet.Deconstruct(out var sender, out var type, out var payload);
+                sender.ReceivePacket(type, payload);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
     }
 }

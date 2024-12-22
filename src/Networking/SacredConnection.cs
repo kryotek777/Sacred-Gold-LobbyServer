@@ -329,9 +329,11 @@ public class SacredConnection
 
         // Packet is valid, dispatch it's payload
 
-        var payload = reader.ReadAll();
+        var payload = reader.ReadAll().ToArray();
 
-        Client.ReceivePacket(type, payload);
+        var packet = new SacredPacket(Client, type, payload);
+
+        LobbyServer.ReceivePacket(packet);
 
         return PacketError.None;
     }
