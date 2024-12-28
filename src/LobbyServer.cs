@@ -3,12 +3,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using Lobby.Networking;
-using Lobby.Networking.Types;
+using Lobby.Types;
+using Lobby.Types.Messages;
 namespace Lobby;
 
 internal static partial class LobbyServer
 {
-    private static readonly List<ServerInfo> separators = new();
+    private static readonly List<ServerInfoMessage> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
     private static uint connectionIdCounter = 0;
 
@@ -17,7 +18,7 @@ internal static partial class LobbyServer
     private static readonly IEnumerable<SacredClient> Users = Clients.Where(c => c.ClientType == ClientType.GameClient);
     private static readonly IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.GameServer);
     private static readonly Channel<SacredPacket> ReceivedPackets = Channel.CreateUnbounded<SacredPacket>();
-    private static ConcurrentQueue<SacredChatMessage> ChatHistory = new();
+    private static ConcurrentQueue<ChatMessage> ChatHistory = new();
 
     public static Task Run()
     {
@@ -79,7 +80,7 @@ internal static partial class LobbyServer
         return value;
     }
 
-    public static List<ServerInfo> GetAllServerInfos()
+    public static List<ServerInfoMessage> GetAllServerInfos()
     {
         var serverList = Servers
             .Where(x => x.ServerInfo != null)
@@ -100,7 +101,7 @@ internal static partial class LobbyServer
         }
     }
 
-    public static void BroadcastServerInfo(ServerInfo info)
+    public static void BroadcastServerInfo(ServerInfoMessage info)
     {
         foreach (var user in Users)
         {
@@ -109,7 +110,7 @@ internal static partial class LobbyServer
         }
     }
 
-    public static void RemoveServer(ServerInfo info)
+    public static void RemoveServer(ServerInfoMessage info)
     {
         foreach (var user in Users)
         {
@@ -122,7 +123,7 @@ internal static partial class LobbyServer
     /// Sends a chat message to everyone but the sender
     /// </summary>
     /// <param name="chatMessage">The message to broadcast</param>
-    public static void BroadcastChatMessage(SacredChatMessage chatMessage)
+    public static void BroadcastChatMessage(ChatMessage chatMessage)
     {
         var maxHistory = Config.Instance.ChatHistoryLimit;
         if (maxHistory > 0)
@@ -255,16 +256,16 @@ internal static partial class LobbyServer
     private static void BuildSeparators()
     {
         separators.Clear();
-        separators.AddRange(Config.Instance.ServerSeparators.Select((name, i) => new ServerInfo(
+        separators.AddRange(Config.Instance.ServerSeparators.Select((name, i) => new ServerInfoMessage(
             Name: name,
             LocalIp: IPAddress.None,
             ExternalIp: IPAddress.None,
             Port: 0,
-            CurrentPlayers: 0,
+            PlayerCount: 0,
             MaxPlayers: 0,
             Flags: 0,
             ServerId: uint.MaxValue - (uint)i, // Give an Id that will never be used in practice
-            NetworkProtocolVersion: 0,
+            NetworkVersion: 0,
             ClientGameVersion: 0,
             ChannelId: 0
         )));

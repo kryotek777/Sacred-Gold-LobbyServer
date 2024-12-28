@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 namespace Lobby;
@@ -36,6 +38,13 @@ internal static class Utils
             Unsafe.CopyBlockUnaligned(valuePtr, spanPtr, (uint)span.Length);
         }
     }
+
+    public static byte[] ToArray<T>(in T value) where T : unmanaged
+    {
+        var size = Unsafe.SizeOf<T>();
+        var array = new byte[size];
+        MemoryMarshal.Write(array, value);
+        return array;
     }
 
     public static ReadOnlySpan<byte> SliceNullTerminated(this ReadOnlySpan<byte> span)
@@ -95,6 +104,9 @@ internal static class Utils
         FormatBytes(data, sb);
         return sb.ToString();
     }
+
+    public static string DeserializeString(ReadOnlySpan<byte> data) => Win1252ToString(data);
+    public static void SerializeString(string str, Span<byte> data) => StringToWin1252(str, data);
 
     public static string Win1252ToString(ReadOnlySpan<byte> span) => Windows1252Encoding.GetString(span.SliceNullTerminated());
     public static void StringToWin1252(string str, Span<byte> span)

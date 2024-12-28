@@ -1,4 +1,5 @@
-using Lobby.Networking.Types;
+using Lobby.Types;
+using Lobby.Types.Messages;
 
 namespace Lobby;
 internal static partial class LobbyServer
