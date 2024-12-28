@@ -24,9 +24,18 @@ internal static class Utils
         );
     }
 
-    public static void FromSpan<T>(ReadOnlySpan<byte> span, out T value) where T : unmanaged
+    public static unsafe void FromSpan<T>(ReadOnlySpan<byte> span, out T value) where T : unmanaged
     {
-        value = MemoryMarshal.Read<T>(span);
+        Debug.Assert(span.Length <= Unsafe.SizeOf<T>());
+
+        value = new();
+
+        fixed (byte* spanPtr = &span[0])
+        fixed (T* valuePtr = &value)
+        {
+            Unsafe.CopyBlockUnaligned(valuePtr, spanPtr, (uint)span.Length);
+        }
+    }
     }
 
     public static ReadOnlySpan<byte> SliceNullTerminated(this ReadOnlySpan<byte> span)
