@@ -14,9 +14,9 @@ internal static partial class LobbyServer
     private static uint connectionIdCounter = 0;
 
     private static readonly ConcurrentDictionary<uint, SacredClient> ClientDictionary = new();
-    private static readonly IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
-    private static readonly IEnumerable<SacredClient> Users = Clients.Where(c => c.ClientType == ClientType.GameClient);
-    private static readonly IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.GameServer);
+    public static readonly IEnumerable<SacredClient> Clients = ClientDictionary.Select(x => x.Value);
+    public static readonly IEnumerable<SacredClient> Users = Clients.Where(c => c.ClientType == ClientType.User);
+    public static readonly IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.Server);
     private static readonly Channel<SacredPacket> ReceivedPackets = Channel.CreateUnbounded<SacredPacket>();
     private static ConcurrentQueue<ChatMessage> ChatHistory = new();
 
@@ -27,8 +27,8 @@ internal static partial class LobbyServer
         List<Task> tasks =
         [
             AcceptLoopAsync(cancellationTokenSource.Token),
-            InputLoopAsync(cancellationTokenSource.Token),
-            ProcessLoopAsync(cancellationTokenSource.Token)
+            ProcessLoopAsync(cancellationTokenSource.Token),
+            Utils.RunTask(InteractiveConsole.Run, cancellationTokenSource.Token),
         ];
 
         return Task.WhenAll(tasks);

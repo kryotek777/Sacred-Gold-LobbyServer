@@ -6,6 +6,9 @@ internal static class Log
 
     private static StreamWriter? logFile;
 
+    private static List<LogLine> pauseBuffer = new();
+    public static bool isPaused = false;
+
     /// <summary>
     /// The minimum logging level needed to actually write the message, anything lower than this value won't be written.
     /// </summary>
@@ -29,6 +32,28 @@ internal static class Log
         }
     }
 
+    public static void PauseConsoleOutput()
+    {
+        lock (writeLock)
+            isPaused = true;
+    }
+
+    public static void ResumeConsoleOutput()
+    {
+        lock (writeLock)
+        {
+            foreach (var item in pauseBuffer)
+            {
+                Console.ForegroundColor = item.Color;
+                Console.WriteLine(item.Line);
+                Console.ResetColor();
+            }
+
+            pauseBuffer.Clear();
+            isPaused = false;
+        }
+    }
+
     private static void Write(LogSeverity severity, string msg)
     {
         // Filter the unwanted messages
@@ -40,9 +65,18 @@ internal static class Log
             {
                 string line = $"[{DateTime.Now:u}] [{severity}] {msg}";
 
-                Console.ForegroundColor = GetSeverityColor(severity);
-                Console.WriteLine(line);
-                Console.ResetColor();
+                var color = GetSeverityColor(severity);
+
+                if (isPaused)
+                {
+                    pauseBuffer.Add(new(line, color));
+                }
+                else
+                {
+                    Console.ForegroundColor = color;
+                    Console.WriteLine(line);
+                    Console.ResetColor();
+                }
 
                 logFile?.WriteLine(line);
                 logFile?.Flush();
@@ -64,3 +98,5 @@ internal static class Log
     public static void Warning(string msg) => Write(LogSeverity.Warning, msg);
     public static void Error(string msg) => Write(LogSeverity.Error, msg);
 }
+
+record LogLine(string Line, ConsoleColor Color);

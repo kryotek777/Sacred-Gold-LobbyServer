@@ -319,8 +319,8 @@ public class SacredConnection
 
         // Is this packet allowed from this connection type?
         if (
-            (!securityData.FromClient && ClientType == ClientType.GameClient) ||
-            (!securityData.FromServer && ClientType == ClientType.GameServer) ||
+            (!securityData.FromClient && ClientType == ClientType.User) ||
+            (!securityData.FromServer && ClientType == ClientType.Server) ||
             (!securityData.FromUnknown && ClientType == ClientType.Unknown)
         )
         {

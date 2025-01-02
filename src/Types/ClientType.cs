@@ -3,6 +3,6 @@ namespace Lobby.Networking;
 public enum ClientType
 {
     Unknown,
-    GameClient,
-    GameServer
+    User,
+    Server
 }

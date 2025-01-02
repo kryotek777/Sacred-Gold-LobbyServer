@@ -40,11 +40,11 @@ public class SacredClient
 
     public void Stop()
     {
-        if (ClientType == ClientType.GameClient)
+        if (ClientType == ClientType.User)
         {
             OnChannelLeaveRequest();
         }
-        else if (ClientType == ClientType.GameServer)
+        else if (ClientType == ClientType.Server)
         {
             OnServerLogout();
         }
@@ -56,8 +56,8 @@ public class SacredClient
 
     public string GetPrintableName() => ClientType switch
     {
-        ClientType.GameClient => $"{clientName}#{ConnectionId}",
-        ClientType.GameServer => $"{ServerInfo?.Name}#{ConnectionId}",
+        ClientType.User => $"{clientName}#{ConnectionId}",
+        ClientType.Server => $"{ServerInfo?.Name}#{ConnectionId}",
         _ => $"{RemoteEndPoint}#{ConnectionId}",
     };
 
@@ -302,7 +302,7 @@ public class SacredClient
         if (Regex.IsMatch(clientName, Config.Instance.AllowedUsernameRegex))
         {
             // We now know that a User is connecting
-            connection.ClientType = ClientType.GameClient;
+            connection.ClientType = ClientType.User;
 
             var loginResult = new LoginResultMessage(
                 Result: LobbyResults.Ok,
@@ -345,7 +345,7 @@ public class SacredClient
         Log.Trace($"{GetPrintableName()} logs in as server");
 
         //We now know that a GameServer is connecting
-        connection.ClientType = ClientType.GameServer;
+        connection.ClientType = ClientType.Server;
 
         //Resolve the external IP of the server
         IPAddress externalIP;
@@ -510,7 +510,7 @@ public class SacredClient
 
     public void Kick()
     {
-        Log.Info($"Kicking {GetPrintableName}");
+        Log.Info($"Kicking {GetPrintableName()}");
         SendPacket(SacredMsgType.Kick, Array.Empty<byte>());
     }
 
