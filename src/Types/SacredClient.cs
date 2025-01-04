@@ -36,12 +36,12 @@ public class SacredClient
         ServerInfo = null;
         Profile = ProfileData.CreateEmpty(PermId);
         Channel = -1;
-        ClientName = "<unknown>";
+        ClientName = RemoteEndPoint.ToString();
     }
 
     public void Start()
     {
-        Log.Info($"{GetPrintableName()} just connected");
+        Log.Info($"{ClientName} just connected");
         connection.Start();
     }
 
@@ -52,14 +52,6 @@ public class SacredClient
         LobbyServer.RemoveClient(this);
     }
 
-    public string GetPrintableName() => ClientType switch
-    {
-        ClientType.User => $"{ClientName}#{ConnectionId}",
-        ClientType.Server => $"{ServerInfo?.Name}#{ConnectionId}",
-        _ => $"{RemoteEndPoint}#{ConnectionId}",
-    };
-
-    public void SendPacket(SacredMsgType msgType, byte[] payload) => connection.EnqueuePacket(msgType, payload);
     public void SendPacket<T>(SacredMsgType msgType, in T serializable) where T : ISerializable<T> => connection.EnqueuePacket(msgType, serializable.Serialize());
 
     public void SendChatMessage(string from, int senderId, string message) => SendChatMessage(new ChatMessage(from, senderId, PermId, message));
@@ -115,7 +107,7 @@ public class SacredClient
 
     public void Kick(string reason = "")
     {
-        Log.Info($"Kicking {GetPrintableName()}");
+        Log.Info($"Kicking {ClientName}");
 
         var msg = new KickMessage(reason);
         SendPacket(SacredMsgType.Kick, msg);

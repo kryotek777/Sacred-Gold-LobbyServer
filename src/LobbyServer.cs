@@ -58,7 +58,7 @@ internal static partial class LobbyServer
             OnServerLogout(client, client.ServerInfo!);
 
         ClientDictionary.Remove(client.ConnectionId, out _);
-        Log.Info($"Client removed {client.GetPrintableName()}");
+        Log.Info($"Client removed {client.ClientName}");
     }
 
     public static SacredClient? GetClientFromPermId(int permId) => Clients.FirstOrDefault(x => permId == x.PermId);
@@ -496,15 +496,15 @@ internal static partial class LobbyServer
     {
         if (Config.Instance.IsBanned(sender.RemoteEndPoint.Address, BanType.ClientOnly))
         {
-            Log.Info($"{sender.GetPrintableName()} tried to log in as a user but was refused because it's banned");
+            Log.Info($"{sender.ClientName} tried to log in as a user but was refused because it's banned");
             sender.Stop();
             return (LobbyResults.ErrorUserBanned, null);
         }
 
-        sender.ClientName = loginRequest.Username;
-        if (Regex.IsMatch(sender.ClientName, Config.Instance.AllowedUsernameRegex))
+        if (Regex.IsMatch(loginRequest.Username, Config.Instance.AllowedUsernameRegex))
         {
             sender.ClientType = ClientType.User;
+            sender.ClientName = loginRequest.Username;
 
             var loginResult = new LoginResultMessage(
                 Result: LobbyResults.Ok,
@@ -514,13 +514,13 @@ internal static partial class LobbyServer
             );
 
             sender.SendPacket(SacredMsgType.ClientLoginResult, loginResult);
-            Log.Info($"{sender.GetPrintableName()} logged in as a user!");
+            Log.Info($"{sender.ClientName} logged in as a user!");
 
             return (LobbyResults.Ok, null);
         }
         else
         {
-            Log.Info($"{sender.GetPrintableName()} tried to login with an invalid username {sender.ClientName}");
+            Log.Info($"{sender.ClientName} tried to login with an invalid username {loginRequest.Username}");
 
             return (LobbyResults.InternalError, "Your username is not allowed! Please choose a different one");
         }
@@ -556,18 +556,18 @@ internal static partial class LobbyServer
             }
             else
             {
-                Log.Warning($"{sender.GetPrintableName()} Requested public data of an invalid player: {request.PermId}");
+                Log.Warning($"{sender.ClientName} Requested public data of an invalid player: {request.PermId}");
                 return (LobbyResults.ErrorUserNotFound, null);
             }
         }
         else if (request.BlockId <= 8)
         {
-            Log.Error($"{sender.GetPrintableName()} Character requests aren't implemented yet!");
+            Log.Error($"{sender.ClientName} Character requests aren't implemented yet!");
             return (LobbyResults.InternalError, "Closed net isn't implemented yet!");
         }
         else
         {
-            Log.Error($"{sender.GetPrintableName()} Requested public data with an invalid block {request}");
+            Log.Error($"{sender.ClientName} Requested public data with an invalid block {request}");
             return (LobbyResults.InvalidBlockSelected, null);
         }
     }
@@ -593,17 +593,15 @@ internal static partial class LobbyServer
     {
         if (Config.Instance.IsBanned(sender.RemoteEndPoint.Address, BanType.ServerOnly))
         {
-            Log.Info($"{sender.GetPrintableName()} tried to log in as a server but was refused because it's banned");
+            Log.Info($"{sender.ClientName} tried to log in as a server but was refused because it's banned");
             sender.Stop();
             return (LobbyResults.ErrorUserBanned, null);
         }
 
-        sender.ClientType = ClientType.Server;
         IPAddress externalIP = sender.RemoteEndPoint.Address.IsInternal() ? Utils.GetExternalIp() : sender.RemoteEndPoint.Address;
 
-        sender.SendPacket(SacredMsgType.ServerLoginResult, externalIP.GetAddressBytes());
-
-
+        sender.ClientType = ClientType.Server;
+        sender.ClientName = serverInfo.Name;
         sender.ServerInfo = serverInfo with
         {
             ExternalIp = externalIP,
@@ -611,9 +609,11 @@ internal static partial class LobbyServer
             ChannelId = 0
         };
 
-        BroadcastServerInfo(sender.ServerInfo);
-        Log.Info($"{sender.GetPrintableName()} logged in as a server!");
+        sender.SendPacket(SacredMsgType.ServerLoginResult, new ServerLoginInfoMessage(externalIP));
 
+        BroadcastServerInfo(sender.ServerInfo);
+
+        Log.Info($"{sender.ClientName} logged in as a server!");
 
         return (LobbyResults.Ok, null);
     }
@@ -628,7 +628,7 @@ internal static partial class LobbyServer
         };
 
         BroadcastServerInfo(sender.ServerInfo);
-        Log.Info($"GameServer {sender.GetPrintableName()} changed public info {sender.ServerInfo.PlayerCount}/{sender.ServerInfo.MaxPlayers} {sender.ServerInfo.Flags}");
+        Log.Info($"GameServer {sender.ClientName} changed public info {sender.ServerInfo.PlayerCount}/{sender.ServerInfo.MaxPlayers} {sender.ServerInfo.Flags}");
 
         return (LobbyResults.Ok, null);
     }
@@ -653,7 +653,7 @@ internal static partial class LobbyServer
     {
         var id = data.ChannelId;
 
-        Log.Warning($"{sender.GetPrintableName()} requested the server list for channel {id}, but channels aren't implemented yet!");
+        Log.Warning($"{sender.ClientName} requested the server list for channel {id}, but channels aren't implemented yet!");
 
         sender.SendServerList();
 
@@ -666,7 +666,7 @@ internal static partial class LobbyServer
     private static (LobbyResults code, string? message) OnChannelJoinRequest(SacredClient sender, JoinChannelMessage data)
     {
         int channel = data.ChannelId;
-        Log.Warning($"{sender.GetPrintableName()} asked to join channel {channel}, but channels aren't implemented yet!");
+        Log.Warning($"{sender.ClientName} asked to join channel {channel}, but channels aren't implemented yet!");
 
         sender.JoinChannel(0);
         return (LobbyResults.Ok, null);
@@ -717,7 +717,7 @@ internal static partial class LobbyServer
             };
 
             BroadcastChatMessage(msg);
-            Log.Info($"{sender.GetPrintableName()} says: {msg.Text}");
+            Log.Info($"{sender.ClientName} says: {msg.Text}");
         }
 
         return (LobbyResults.Ok, null);
@@ -745,7 +745,7 @@ internal static partial class LobbyServer
             var gameName = sender.ServerInfo!.Name;
             BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");
 
-            Log.Info($"{client.GetPrintableName()} joined {sender.GetPrintableName()}");
+            Log.Info($"{client.ClientName} joined {sender.ClientName}");
         }
 
         return (LobbyResults.Ok, null);

@@ -125,7 +125,7 @@ public class SacredConnection
                         _ => "Unknown error"
                     };
 
-                    Log.Error($"{Client.GetPrintableName()}: {message}");
+                    Log.Error($"{Client.ClientName}: {message}");
                 }
             }
         }

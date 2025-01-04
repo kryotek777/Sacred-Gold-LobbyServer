@@ -114,7 +114,7 @@ public static class InteractiveConsole
             .UseConverter(x => x.Item1);
 
         prompt.AddChoice(("No one", null!));
-        prompt.AddChoices(LobbyServer.Clients.Select(x => (x.GetPrintableName(), x)));
+        prompt.AddChoices(LobbyServer.Clients.Select(x => (x.ClientName, x)));
 
         return AnsiConsole.Prompt(prompt).Item2;
     }
