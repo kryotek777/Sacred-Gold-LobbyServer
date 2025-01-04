@@ -18,7 +18,7 @@ public class SacredClient
     public uint ConnectionId { get; private set; }
     public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
     public ServerInfoMessage? ServerInfo { get; set; }
-    public string? clientName { get; set; }
+    public string ClientName { get; set; }
     public ProfileData Profile { get; set; }
     public int SelectedBlock { get; set; }
     public int Channel { get; set; }
@@ -36,6 +36,7 @@ public class SacredClient
         ServerInfo = null;
         Profile = ProfileData.CreateEmpty(PermId);
         Channel = -1;
+        ClientName = "<unknown>";
     }
 
     public void Start()
@@ -53,7 +54,7 @@ public class SacredClient
 
     public string GetPrintableName() => ClientType switch
     {
-        ClientType.User => $"{clientName}#{ConnectionId}",
+        ClientType.User => $"{ClientName}#{ConnectionId}",
         ClientType.Server => $"{ServerInfo?.Name}#{ConnectionId}",
         _ => $"{RemoteEndPoint}#{ConnectionId}",
     };

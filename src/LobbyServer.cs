@@ -75,7 +75,7 @@ internal static partial class LobbyServer
 
         foreach (var user in Users)
         {
-            if (user.IsInChannel && user.clientName!.AsSpan().Contains(name, StringComparison.InvariantCultureIgnoreCase))
+            if (user.IsInChannel && user.ClientName!.AsSpan().Contains(name, StringComparison.InvariantCultureIgnoreCase))
             {
                 // If we haven't got another match, save the result
                 if (value == null)
@@ -176,7 +176,7 @@ internal static partial class LobbyServer
             joining.SendChatMessage(chatMessage with { DestinationPermId = joining.PermId });
         }
 
-        BroadcastSystemMessage($"\\cFFFFFFFF - {joining.clientName}\\cFF00FF00 joined the channel");
+        BroadcastSystemMessage($"\\cFFFFFFFF - {joining.ClientName}\\cFF00FF00 joined the channel");
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ internal static partial class LobbyServer
                 user.OtherUserLeftChannel(leaving.PermId);
         }
 
-        BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.clientName}\\cFFFF0000 left the channel");
+        BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.ClientName}\\cFFFF0000 left the channel");
     }
 
     public static void BroadcastSystemMessage(string message)
@@ -501,8 +501,8 @@ internal static partial class LobbyServer
             return (LobbyResults.ErrorUserBanned, null);
         }
 
-        sender.clientName = loginRequest.Username;
-        if (Regex.IsMatch(sender.clientName, Config.Instance.AllowedUsernameRegex))
+        sender.ClientName = loginRequest.Username;
+        if (Regex.IsMatch(sender.ClientName, Config.Instance.AllowedUsernameRegex))
         {
             sender.ClientType = ClientType.User;
 
@@ -520,7 +520,7 @@ internal static partial class LobbyServer
         }
         else
         {
-            Log.Info($"{sender.GetPrintableName()} tried to login with an invalid username {sender.clientName}");
+            Log.Info($"{sender.GetPrintableName()} tried to login with an invalid username {sender.ClientName}");
 
             return (LobbyResults.InternalError, "Your username is not allowed! Please choose a different one");
         }
@@ -695,8 +695,8 @@ internal static partial class LobbyServer
                 if (user != null)
                 {
                     text = match.Groups["message"].Value;
-                    user.SendChatMessage($"{sender.clientName} whispers to you", sender.PermId, $"{text}");
-                    sender.SendSystemMessage($"You whisper to {user.clientName}: {text}");
+                    user.SendChatMessage($"{sender.ClientName} whispers to you", sender.PermId, $"{text}");
+                    sender.SendSystemMessage($"You whisper to {user.ClientName}: {text}");
                 }
                 else
                 {
@@ -712,7 +712,7 @@ internal static partial class LobbyServer
         {
             var msg = data with
             {
-                SenderName = sender.clientName ?? "<unknown>",
+                SenderName = sender.ClientName,
                 SenderPermId = sender.PermId
             };
 
@@ -740,7 +740,7 @@ internal static partial class LobbyServer
 
         if (client != null)
         {
-            var accName = client.clientName;
+            var accName = client.ClientName;
             var charName = client.Profile.SelectedCharacter.Name;
             var gameName = sender.ServerInfo!.Name;
             BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");

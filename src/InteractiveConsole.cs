@@ -80,7 +80,7 @@ public static class InteractiveConsole
 
         foreach (var client in LobbyServer.Clients)
         {
-            var name = client.clientName ?? "<unknown>";
+            var name = client.ClientName;
             var type = client.ClientType.ToString();
             var address = client.RemoteEndPoint.ToString();
             table.AddRow(name, type, address);
