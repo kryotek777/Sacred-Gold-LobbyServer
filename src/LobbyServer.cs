@@ -409,16 +409,11 @@ internal static partial class LobbyServer
                     result = OnChannelLeaveRequest(sender);
                     break;
                 }
+            case SacredMsgType.ReceivePrivateChatMessage:
             case SacredMsgType.ReceiveChatMessage:
                 {
                     var data = ChatMessage.Deserialize(payload);
                     result = OnReceiveChatMessage(sender, data);
-                    break;
-                }
-            case SacredMsgType.ReceivePrivateChatMessage:
-                {
-                    var data = ChatMessage.Deserialize(payload);
-                    result = OnReceivePrivateChatMessage(sender, data);
                     break;
                 }
             case SacredMsgType.Alarm:
@@ -726,10 +721,6 @@ internal static partial class LobbyServer
         }
 
         return (LobbyResults.Ok, null);
-    }
-    private static (LobbyResults code, string? message) OnReceivePrivateChatMessage(SacredClient sender, ChatMessage data)
-    {
-        return (LobbyResults.InternalError, "Not implemented yet");
     }
     private static (LobbyResults code, string? message) OnAlarm(SacredClient sender)
     {
