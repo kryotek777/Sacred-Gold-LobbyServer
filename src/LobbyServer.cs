@@ -724,7 +724,8 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnAlarm(SacredClient sender)
     {
-        return (LobbyResults.InternalError, "Not implemented yet");
+        Log.Warning($"{sender.ClientName} sent an alarm!");
+        return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnFindUserRequest(SacredClient sender, FindUserMessage data)
     {
