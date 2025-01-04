@@ -3,7 +3,7 @@ using Lobby.Types.Messages.Data;
 namespace Lobby.Types.Messages;
 
 public unsafe record JoinChannelMessage(
-    ushort ChannelId
+    int ChannelId
 ) : ISerializable<JoinChannelMessage>
 {
     public JoinChannelMessage(JoinChannelMessageData data)
@@ -23,9 +23,11 @@ public unsafe record JoinChannelMessage(
 
     public JoinChannelMessageData ToStruct()
     {
+        var id = checked((ushort)ChannelId);
+        
         return new JoinChannelMessageData
         {
-            ChannelId = ChannelId
+            ChannelId = id
         };
     }
 }

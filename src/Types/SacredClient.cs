@@ -86,8 +86,9 @@ public class SacredClient
         if (Channel != channel)
         {
             Channel = channel;
-
-            SendPacket(SacredMsgType.UserJoinChannel, BitConverter.GetBytes(channel));
+            
+            var msg = new JoinChannelMessage(channel);
+            SendPacket(SacredMsgType.UserJoinChannel, msg);
 
             SendChannelChatMessage();
 
@@ -106,15 +107,10 @@ public class SacredClient
         SendPacket(SacredMsgType.SendPublicData, publicData);
     }
 
-    public void OtherUserLeftChannel(int permId)
+    public void OtherUserLeftChannel(int permId, string name)
     {
-        // The payload *should* be an UserJoinLeave
-        // but since the name doesn't seem to be used, why the overhead of serializing the username?
-
-        // var payload = new UserJoinLeave(permId, name).Serialize();
-        var payload = BitConverter.GetBytes(permId);
-
-        SendPacket(SacredMsgType.OtherUserLeftChannel, payload);
+        var msg = new ChannelUserMessage(permId, name);
+        SendPacket(SacredMsgType.OtherUserLeftChannel, msg);
     }
 
     public void Kick(string reason = "")

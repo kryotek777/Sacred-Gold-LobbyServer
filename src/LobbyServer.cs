@@ -188,7 +188,7 @@ internal static partial class LobbyServer
         foreach (var user in Users)
         {
             if (user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
-                user.OtherUserLeftChannel(leaving.PermId);
+                user.OtherUserLeftChannel(leaving.PermId, leaving.ClientName);
         }
 
         BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.ClientName}\\cFFFF0000 left the channel");
