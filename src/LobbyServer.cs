@@ -149,51 +149,6 @@ internal static partial class LobbyServer
         }
     }
 
-    /// <summary>
-    /// Notifies other clients that a user has joined a channel and sends them the user list
-    /// </summary>
-    /// <param name="joining">The user that's joining the channel</param>
-    public static void UserJoinedChannel(SacredClient joining)
-    {
-
-        foreach (var user in Users)
-        {
-            if (user.IsInChannel && user.ConnectionId != joining.ConnectionId)
-            {
-                // I know there's a specific message to notify that a user has joined a channel!
-                // But just sending the profile data works anyway, saves us a packet and prevents flickering in the user list!
-
-                // Send our data to the other client
-                user.SendProfileData(joining.Profile);
-
-                // Send us the client's data
-                joining.SendProfileData(user.Profile);
-            }
-        }
-
-        foreach (var chatMessage in ChatHistory)
-        {
-            joining.SendChatMessage(chatMessage with { DestinationPermId = joining.PermId });
-        }
-
-        BroadcastSystemMessage($"\\cFFFFFFFF - {joining.ClientName}\\cFF00FF00 joined the channel");
-    }
-
-    /// <summary>
-    /// Notifies other clients that a user has left the channel
-    /// </summary>
-    /// <param name="leaving">The user that's leaving the channel</param>
-    public static void UserLeftChannel(SacredClient leaving)
-    {
-        foreach (var user in Users)
-        {
-            if (user.IsInChannel && user.ConnectionId != leaving.ConnectionId)
-                user.OtherUserLeftChannel(leaving.PermId, leaving.ClientName);
-        }
-
-        BroadcastSystemMessage($"\\cFFFFFFFF - {leaving.ClientName}\\cFFFF0000 left the channel");
-    }
-
     public static void BroadcastSystemMessage(string message)
     {
         foreach (var user in Users)
@@ -479,8 +434,7 @@ internal static partial class LobbyServer
                 }
         }
 
-        var msg = new ResultMessage(result.code, type);
-        sender.SendPacket(SacredMsgType.LobbyResult, msg);
+        sender.SendLobbyResult(result.code, type);
 
         if (!string.IsNullOrWhiteSpace(result.message))
         {
@@ -513,7 +467,8 @@ internal static partial class LobbyServer
                 Message: "Welcome!"
             );
 
-            sender.SendPacket(SacredMsgType.ClientLoginResult, loginResult);
+            sender.SendUserLoginResult(loginResult);
+
             Log.Info($"{sender.ClientName} logged in as a user!");
 
             return (LobbyResults.Ok, null);
@@ -609,7 +564,7 @@ internal static partial class LobbyServer
             ChannelId = 0
         };
 
-        sender.SendPacket(SacredMsgType.ServerLoginResult, new ServerLoginInfoMessage(externalIP));
+        sender.SendServerLoginResult(externalIP);
 
         BroadcastServerInfo(sender.ServerInfo);
 
@@ -639,6 +594,7 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnClientCharacterSelect(SacredClient sender, SelectPublicDataSetMessage data)
     {
+        sender.SelectedCharacter = data.BlockId;
         return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnReceiveClientPublicDataFromServer(SacredClient sender, PublicDataMessage data)
@@ -668,7 +624,37 @@ internal static partial class LobbyServer
         int channel = data.ChannelId;
         Log.Warning($"{sender.ClientName} asked to join channel {channel}, but channels aren't implemented yet!");
 
+        if(sender.Profile == null)
+        {
+            return (LobbyResults.InternalError, "This client doesn't have profile data!");
+        }
+
         sender.JoinChannel(0);
+        sender.SendChannelChatMessage();
+
+        foreach (var user in Users)
+        {
+            if (user.IsInChannel && user != sender)
+            {
+                // I know there's a specific message to notify that a user has joined a channel!
+                // But just sending the profile data works anyway, saves us a packet and prevents flickering in the user list!
+
+                // Send our data to the other client
+                user.SendProfileData(sender.Profile);
+
+                // Send us the client's data
+                if(user.Profile != null)
+                    sender.SendProfileData(user.Profile);
+            }
+        }
+
+        foreach (var chatMessage in ChatHistory)
+        {
+            sender.SendChatMessage(chatMessage with { DestinationPermId = sender.PermId });
+        }
+
+        BroadcastSystemMessage($"\\cFFFFFFFF - {sender.ClientName}\\cFF00FF00 joined the channel");
+
         return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnChannelLeaveRequest(SacredClient sender)
@@ -676,7 +662,13 @@ internal static partial class LobbyServer
         if (sender.Channel != -1)
         {
             sender.Channel = -1;
-            UserLeftChannel(sender);
+            foreach (var user in Users)
+            {
+                if (user.IsInChannel && user.ConnectionId != sender.ConnectionId)
+                    user.OtherUserLeftChannel(sender.PermId, sender.ClientName);
+            }
+
+            BroadcastSystemMessage($"\\cFFFFFFFF - {sender.ClientName}\\cFFFF0000 left the channel");
         }
         return (LobbyResults.Ok, null);
     }
@@ -765,13 +757,11 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnMessageOfTheDayRequest(SacredClient sender, MotdRequestMessage data)
     {
-        var id = data.Id;
         var text = Config.Instance.MessageOfTheDay;
 
         if (!string.IsNullOrWhiteSpace(text))
         {
-            var msg = new MotdMessage(id, text);
-            sender.SendPacket(SacredMsgType.SendMessageOfTheDay, msg);
+            sender.SendMessageOfTheDay(data.Id, text);
         }
 
         return (LobbyResults.Ok, null);

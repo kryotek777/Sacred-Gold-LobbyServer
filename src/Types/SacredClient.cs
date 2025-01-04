@@ -9,26 +9,28 @@ namespace Lobby.Networking;
 
 public class SacredClient
 {
-    public ClientType ClientType 
+    public string ClientName { get; set; }
+    public int Channel { get; set; }
+    public ServerInfoMessage? ServerInfo { get; set; }
+    public ProfileData? Profile { get; set; }
+    public int SelectedCharacter { get; set; }
+
+    // TODO: Actually make Permanent Ids permanent when we implement persistent accounts...
+    public uint ConnectionId { get; private set; }
+    public int PermId => (int)ConnectionId;
+
+    public ClientType ClientType
     {
         get => connection.ClientType;
         set => connection.ClientType = value;
     }
-    public bool IsInChannel => Channel != -1;
-    public uint ConnectionId { get; private set; }
-    public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
-    public ServerInfoMessage? ServerInfo { get; set; }
-    public string ClientName { get; set; }
-    public ProfileData Profile { get; set; }
-    public int SelectedBlock { get; set; }
-    public int Channel { get; set; }
-    // TODO: Actually make Permanent Ids permanent when we implement persistent accounts...
-    public int PermId => (int)ConnectionId;
-
     public bool IsUser => ClientType == ClientType.User;
     public bool IsServer => ClientType == ClientType.Server;
+    public bool IsInChannel => Channel != -1;
+    public IPEndPoint RemoteEndPoint => connection.RemoteEndPoint;
 
-    private SacredConnection connection;
+    private readonly SacredConnection connection;
+
     public SacredClient(Socket socket, uint connectionId, CancellationToken parentToken)
     {
         connection = new SacredConnection(this, socket, connectionId, parentToken);
@@ -44,24 +46,20 @@ public class SacredClient
         Log.Info($"{ClientName} just connected");
         connection.Start();
     }
-
     public void Stop()
     {
         connection.Stop();
 
         LobbyServer.RemoveClient(this);
     }
-
-    public void SendPacket<T>(SacredMsgType msgType, in T serializable) where T : ISerializable<T> => connection.EnqueuePacket(msgType, serializable.Serialize());
-
+    public void SendUserLoginResult(LoginResultMessage msg) => SendPacket(SacredMsgType.ClientLoginResult, msg);
+    public void SendServerLoginResult(IPAddress externalIp) => SendPacket(SacredMsgType.ServerLoginRequest, new ServerLoginInfoMessage(externalIp));
     public void SendChatMessage(string from, int senderId, string message) => SendChatMessage(new ChatMessage(from, senderId, PermId, message));
     public void SendSystemMessage(string message) => SendChatMessage(new ChatMessage("", 0, PermId, message));
-
     public void SendChatMessage(ChatMessage message)
     {
         SendPacket(SacredMsgType.SendChatMessage, message);
     }
-
     public void SendServerList()
     {
         var infos = LobbyServer.GetAllServerInfos();
@@ -71,40 +69,27 @@ public class SacredClient
             SendPacket(SacredMsgType.SendServerInfo, info);
         }
     }
-
     public void JoinChannel(int channel)
     {
-        // TODO: When fully implementing channels, we need to leave the one we're actually in
-        if (Channel != channel)
-        {
-            Channel = channel;
-            
-            var msg = new JoinChannelMessage(channel);
-            SendPacket(SacredMsgType.UserJoinChannel, msg);
+        Channel = channel;
 
-            SendChannelChatMessage();
-
-            LobbyServer.UserJoinedChannel(this);
-        }
+        var msg = new JoinChannelMessage(channel);
+        SendPacket(SacredMsgType.UserJoinChannel, msg);
     }
-
     public void SendLobbyResult(LobbyResults result, SacredMsgType action)
     {
         SendPacket(SacredMsgType.LobbyResult, new ResultMessage(result, action));
     }
-
     public void SendProfileData(ProfileData data)
     {
         var publicData = PublicDataMessage.FromProfileData(data.PermId, data);
         SendPacket(SacredMsgType.SendPublicData, publicData);
     }
-
     public void OtherUserLeftChannel(int permId, string name)
     {
         var msg = new ChannelUserMessage(permId, name);
         SendPacket(SacredMsgType.OtherUserLeftChannel, msg);
     }
-
     public void Kick(string reason = "")
     {
         Log.Info($"Kicking {ClientName}");
@@ -113,23 +98,23 @@ public class SacredClient
         SendPacket(SacredMsgType.Kick, msg);
         Stop();
     }
-
     public void UpdateServerInfo(ServerInfoMessage serverInfo) => SendPacket(SacredMsgType.ServerChangePublicInfo, serverInfo);
-
     public void RemoveServer(ServerInfoMessage serverInfo)
     {
         // I thought it was SacredMsgType.RemoveServer, but that doesn't work for some reason
         SendPacket(SacredMsgType.ServerLogout, serverInfo);
     }
-
     public void SendImportantMessage(string message, bool showPopup = true)
     {
         var msg = new ImportantMessage(showPopup, message, PermId);
-
         SendPacket(SacredMsgType.ClientImportantMessage, msg);
     }
-
-    private void SendChannelChatMessage()
+    public void SendMessageOfTheDay(ushort id, string text)
+    {
+        var msg = new MotdMessage(id, text);
+        SendPacket(SacredMsgType.SendMessageOfTheDay, msg);
+    }
+    public void SendChannelChatMessage()
     {
         var message = Config.Instance.ChannelChatMessage;
 
@@ -145,4 +130,6 @@ public class SacredClient
             );
         }
     }
+
+    private void SendPacket<T>(SacredMsgType msgType, in T serializable) where T : ISerializable<T> => connection.EnqueuePacket(msgType, serializable.Serialize());
 }
