@@ -116,10 +116,13 @@ public class SacredClient
         SendPacket(SacredMsgType.OtherUserLeftChannel, payload);
     }
 
-    public void Kick()
+    public void Kick(string reason = "")
     {
         Log.Info($"Kicking {GetPrintableName()}");
-        SendPacket(SacredMsgType.Kick, Array.Empty<byte>());
+
+        var msg = new KickMessage(reason);
+        SendPacket(SacredMsgType.Kick, msg);
+        Stop();
     }
 
     public void UpdateServerInfo(ServerInfoMessage serverInfo) => SendPacket(SacredMsgType.ServerChangePublicInfo, serverInfo);
