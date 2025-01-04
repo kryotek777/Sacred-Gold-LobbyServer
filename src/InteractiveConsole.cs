@@ -50,6 +50,11 @@ public static class InteractiveConsole
                     }                
                 });
             }
+            catch(NotSupportedException ex)
+            {
+                Log.Error($"The interactive console is not supported by your system: {ex.Message}"); 
+                break;
+            }
             catch(TaskCanceledException)
             {
                 throw;
@@ -122,7 +127,7 @@ public static class InteractiveConsole
 
     private static void WaitForEnter()
     {
-        while(Console.ReadKey().Key != ConsoleKey.Enter);
+        Console.ReadLine();
     }
 }
 
