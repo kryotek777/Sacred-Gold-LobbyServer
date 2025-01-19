@@ -43,9 +43,25 @@ ChatHistoryLimit = 20
 ServerSeparators = [ "## Vanilla ##", "## Modded ##" ]
 
 # A Regular Expression defining what usernames are allowed
-# The default one is '^[\w-\\]+$' and allows letters, numbers, underscores (_), dashes (-) and backslashes (\, for colored names)
+# The default one is '^[\w-]+$' and allows letters, numbers, underscores (_), dashes (-)
+AllowedUsernameRegex = '^[\w-]+$'
 
-AllowedUsernameRegex = '^[\w-\\]+$'
+# Wether to store persistent data such as accounts, profile info, etc.
+# If disabled, AllowAnonymousLogin will always be true
+StorePersistentData = true
+
+# The path of the file that will contain the account data for the clients
+DatabasePath = "./Data/database.sqlite"
+
+# Path of the folder that will contain the savegames for each registered user
+# Every user gets a subfolder named after its internal ID and contains the .pax files for each save
+SavesPath = "./Data/Saves/"
+
+# The path of the templates that will be used when creating new charactrs in Closed Net
+TemplatePath = "./Data/Templates/"
+
+# Allow unregistered users to log in with any username
+AllowAnonymousLogin = true
 
 # Here you can ban people by their ip address
 # Bans can be of three types

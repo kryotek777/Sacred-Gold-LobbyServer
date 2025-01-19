@@ -156,21 +156,18 @@ internal static class Utils
             result[i] = (byte)num;
         }
 
-        return Win1252ToString(result);
+        return DeserializeString(result);
     }
 
-    public static byte[] TincatEncrypt(string data, int length)
+    public static void TincatEncrypt(string text, Span<byte> data)
     {
         int num = 63;
-        var result = new byte[length];
 
         for (int i = 0; i < data.Length; i++)
         {
-            result[i] = (byte)unchecked((data[i] + i + num) ^ EncryptionKey[i % EncryptionKey.Length]);
-            num = data[i];
+            data[i] = (byte)unchecked((text[i] + i + num) ^ EncryptionKey[i % EncryptionKey.Length]);
+            num = text[i];
         }
-
-        return result;
     }
 
     public static byte[] ZLibCompress(byte[] data)

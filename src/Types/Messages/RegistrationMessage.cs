@@ -15,12 +15,12 @@ public unsafe record RegistrationMessage(
     public RegistrationMessage(RegistrationMessageData data)
         : this(
             Utils.DeserializeString(new ReadOnlySpan<byte>(data.Username, Constants.NameMaxLength)),
-            Utils.DeserializeString(new ReadOnlySpan<byte>(data.Password, Constants.PasswordMaxLength)),
-            Utils.DeserializeString(new ReadOnlySpan<byte>(data.CdKey, Constants.KeyMaxLength)),
+            Utils.TincatDecrypt(new ReadOnlySpan<byte>(data.Password, Constants.PasswordMaxLength)),
+            Utils.TincatDecrypt(new ReadOnlySpan<byte>(data.CdKey, Constants.KeyMaxLength)),
             Utils.DeserializeString(new ReadOnlySpan<byte>(data.Mail, Constants.MailMaxLength)),
             data.PatchLevel,
             data.ProgramVersion,
-            Utils.DeserializeString(new ReadOnlySpan<byte>(data.CdKey2, Constants.KeyMaxLength))
+            Utils.TincatDecrypt(new ReadOnlySpan<byte>(data.CdKey2, Constants.KeyMaxLength))
         )
     { }
 
@@ -40,12 +40,12 @@ public unsafe record RegistrationMessage(
     {
         RegistrationMessageData result = new();
         Utils.SerializeString(Username, new Span<byte>(result.Username, Constants.NameMaxLength));
-        Utils.SerializeString(Password, new Span<byte>(result.Password, Constants.PasswordMaxLength));
-        Utils.SerializeString(CdKey, new Span<byte>(result.CdKey, Constants.KeyMaxLength));
+        Utils.TincatEncrypt(Password, new Span<byte>(result.Password, Constants.PasswordMaxLength));
+        Utils.TincatEncrypt(CdKey, new Span<byte>(result.CdKey, Constants.KeyMaxLength));
         Utils.SerializeString(Mail, new Span<byte>(result.Mail, Constants.MailMaxLength));
         result.PatchLevel = PatchLevel;
         result.ProgramVersion = ProgramVersion;
-        Utils.SerializeString(CdKey2, new Span<byte>(result.CdKey2, Constants.KeyMaxLength));
+        Utils.TincatEncrypt(CdKey2, new Span<byte>(result.CdKey2, Constants.KeyMaxLength));
         return result;
     }
 }

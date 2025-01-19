@@ -15,6 +15,8 @@ public unsafe record ChannelListMessage(
         )
     { }
 
+    public ChannelListMessage(List<ChannelInfo> channels) : this((ushort)channels.Count, channels) {}
+
     public static ChannelListMessage Deserialize(ReadOnlySpan<byte> span)
     {
         Utils.FromSpan(span, out ChannelListMessageData data);

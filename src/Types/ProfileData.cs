@@ -116,7 +116,7 @@ public record ProfileData(
             ConnectionSpeed: 0,
             ShowEmail: false,
             SelectedCharacterSlot: 0,
-            CharactersNames: ["", "", "", "", "", "", "", ""],
+            CharactersNames: ["Char1", "Char2", "Char3", "Char4", "Char5", "Char6", "Char7", "Char8"],
             SelectedCharacter: CharacterPreview.Empty
     );
 }

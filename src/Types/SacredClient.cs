@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using Lobby.DB;
 using Lobby.Types;
 using Lobby.Types.Messages;
 using Lobby.Types.Messages.Data;
@@ -14,10 +15,10 @@ public class SacredClient
     public ServerInfoMessage? ServerInfo { get; set; }
     public ProfileData? Profile { get; set; }
     public int SelectedCharacter { get; set; }
-
-    // TODO: Actually make Permanent Ids permanent when we implement persistent accounts...
     public uint ConnectionId { get; private set; }
-    public int PermId => (int)ConnectionId;
+    public int PermId { get; set; }
+    public bool IsAnonymous { get; set; }
+    
 
     public ClientType ClientType
     {
@@ -39,6 +40,7 @@ public class SacredClient
         Profile = ProfileData.CreateEmpty(PermId);
         Channel = -1;
         ClientName = RemoteEndPoint.ToString();
+        PermId = -1;
     }
 
     public void Start()
@@ -92,7 +94,10 @@ public class SacredClient
     }
     public void Kick(string reason = "")
     {
-        Log.Info($"Kicking {ClientName}");
+        if(!string.IsNullOrWhiteSpace(reason))
+            Log.Info($"Kicking {ClientName}: {reason}");
+        else
+            Log.Info($"Kicking {ClientName}");
 
         var msg = new KickMessage(reason);
         SendPacket(SacredMsgType.Kick, msg);
@@ -130,6 +135,44 @@ public class SacredClient
             );
         }
     }
+    public void SendCharacter(CharacterPreview preview, int permId, short blockId)
+    {
+        // TODO: Find a cleaner way
+        using var ms = new MemoryStream();
+        using var w = new BinaryWriter(ms);
+
+        w.Write(preview.Serialize());
+        w.Write(0); // Length of the savegame
+
+        var data = ms.ToArray();
+        var pubData = new PublicDataMessage(permId, blockId, data.Length, 0, data.Length, data);
+        
+        SendPublicData(pubData);
+    }
+    public void SendSaveGame(SaveFile saveFile, int permId, short blockId)
+    {
+        // TODO: Find a cleaner way
+        using var ms = new MemoryStream();
+        using var w = new BinaryWriter(ms);
+
+        var preview = saveFile.GetCharacterPreview();
+        var saveData = saveFile.GetSaveData();
+        var compr = Utils.ZLibCompress(saveData);
+
+        w.Write(preview.Serialize());
+        w.Write(compr.Length);
+        w.Write(saveData.Length);
+        w.Write(compr);
+
+        var data = ms.ToArray();
+        var pubData = new PublicDataMessage(permId, blockId, data.Length, 0, data.Length, data);
+        
+        SendPublicData(pubData);    
+    }
+
+
+    public void SendPublicData(PublicDataMessage data) => SendPacket(SacredMsgType.SendPublicData, data);
+    public void SendChannelList(List<ChannelInfo> info) => SendPacket(SacredMsgType.SendChannelList, new ChannelListMessage(info));
 
     private void SendPacket<T>(SacredMsgType msgType, in T serializable) where T : ISerializable<T> => connection.EnqueuePacket(msgType, serializable.Serialize());
 }

@@ -10,5 +10,6 @@ public static class Constants
     public const int ChannelMax = 128;
     public const int PublicDataMax = 131072;
     public const int MotdMaxLength = 131072;
+    public const int CheaterCounterBlockId = 0;
     public const int ProfileBlockId = 10;
 }

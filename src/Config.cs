@@ -18,6 +18,11 @@ public class Config
     public List<string> ServerSeparators { get; set; }
     public uint ChatHistoryLimit { get; set; }
     public string AllowedUsernameRegex { get; set; }
+    public bool StorePersistentData { get; set;}
+    public string DatabasePath { get; set; }
+    public string SavesPath { get; set; }
+    public string TemplatePath { get; set; }
+    public bool AllowAnonymousLogin { get; set;}
 
     public Config()
     {
@@ -30,6 +35,11 @@ public class Config
         ServerSeparators = new();
         ChatHistoryLimit = 0;
         AllowedUsernameRegex = ".*";
+        StorePersistentData = false;
+        DatabasePath = "";
+        AllowAnonymousLogin = true;
+        SavesPath = "";
+        TemplatePath = "";
     }
 
     public static bool Load([NotNullWhen(false)] out string? error)
@@ -60,6 +70,10 @@ public class Config
                 };
 
                 Instance = Toml.ToModel<Config>(text, options: options);
+
+                if(Instance.StorePersistentData == false)
+                    Instance.AllowAnonymousLogin = true;
+
                 error = null;
                 return true;
             }

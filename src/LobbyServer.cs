@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Channels;
+using Lobby.DB;
 using Lobby.Networking;
 using Lobby.Types;
 using Lobby.Types.Messages;
@@ -25,6 +26,7 @@ internal static partial class LobbyServer
     public static Task Run()
     {
         LoadConfig();
+        Database.Load();
 
         List<Task> tasks =
         [
@@ -41,6 +43,8 @@ internal static partial class LobbyServer
         Log.Info("Exiting...");
 
         cancellationTokenSource.Cancel();
+
+        Database.Close();
     }
 
     public static void ReceivePacket(SacredPacket packet)
@@ -294,12 +298,14 @@ internal static partial class LobbyServer
                     result = OnReceivePublicInfo(sender, data);
                     break;
                 }
+            case SacredMsgType.ServerRequestsClientsPublicData:
             case SacredMsgType.PublicDataRequest:
                 {
                     var data = PublicDataRequestMessage.Deserialize(payload);
                     result = OnPublicDataRequest(sender, data);
                     break;
                 }
+            case SacredMsgType.ReceiveClientPublicDataFromServer:
             case SacredMsgType.ReceivePublicData:
                 {
                     var data = PublicDataMessage.Deserialize(payload);
@@ -328,18 +334,6 @@ internal static partial class LobbyServer
                 {
                     var data = SelectPublicDataSetMessage.Deserialize(payload);
                     result = OnClientCharacterSelect(sender, data);
-                    break;
-                }
-            case SacredMsgType.ReceiveClientPublicDataFromServer:
-                {
-                    var data = PublicDataMessage.Deserialize(payload);
-                    result = OnReceiveClientPublicDataFromServer(sender, data);
-                    break;
-                }
-            case SacredMsgType.ServerRequestsClientsPublicData:
-                {
-                    var data = PublicDataRequestMessage.Deserialize(payload);
-                    result = OnServerRequestsClientsPublicData(sender, data);
                     break;
                 }
             case SacredMsgType.ServerListRequest:
@@ -444,7 +438,20 @@ internal static partial class LobbyServer
 
     private static (LobbyResults code, string? message) OnClientRegistrationRequest(SacredClient sender, RegistrationMessage data)
     {
-        return (LobbyResults.InternalError, "Registration is not supported. You can log in with any username and password you wish");
+        if (!Config.Instance.StorePersistentData)
+            return (LobbyResults.InternalError, "Registration is not supported. You can log in with any username and password you wish");
+
+        data.Deconstruct(out var username, out var password, out _, out _, out _, out _, out _);
+
+        if (Database.TryGetAccount(username, out _))
+        {
+            return (LobbyResults.ErrorUsernameExists, null);
+        }
+
+        Database.CreateAccount(username, password);
+
+        return (LobbyResults.Ok, null);
+
     }
     private static (LobbyResults code, string? message) OnClientLoginRequest(SacredClient sender, LoginMessage loginRequest)
     {
@@ -455,10 +462,48 @@ internal static partial class LobbyServer
             return (LobbyResults.ErrorUserBanned, null);
         }
 
-        if (Regex.IsMatch(loginRequest.Username, Config.Instance.AllowedUsernameRegex))
+        if (Config.Instance.StorePersistentData)
+        {
+            if (Database.TryLogin(loginRequest.Username, loginRequest.Password, out var account))
+            {
+                sender.Profile = account.GetProfileData();
+
+                sender.ClientType = ClientType.User;
+                sender.ClientName = account.Username;
+                sender.PermId = account.PermId;
+                sender.IsAnonymous = false;
+
+                var loginResult = new LoginResultMessage(
+                    Result: LobbyResults.Ok,
+                    Ip: sender.RemoteEndPoint.Address,
+                    PermId: sender.PermId,
+                    Message: "Welcome!"
+                );
+
+                sender.SendUserLoginResult(loginResult);
+                sender.SendProfileData(sender.Profile);
+
+                Log.Info($"{sender.ClientName} logged in as a user!");
+
+                return (LobbyResults.Ok, null);
+            }
+            else
+            {
+                if (account != null)
+                    return (LobbyResults.InvalidPassword, null);
+
+                if (!Config.Instance.AllowAnonymousLogin)
+                    return (LobbyResults.ErrorUserNotFound, null);
+
+            }
+        }
+
+        if (Config.Instance.AllowAnonymousLogin && Regex.IsMatch(loginRequest.Username, Config.Instance.AllowedUsernameRegex))
         {
             sender.ClientType = ClientType.User;
             sender.ClientName = loginRequest.Username;
+            sender.PermId = (int)sender.ConnectionId + 1000000;
+            sender.IsAnonymous = true;
 
             var loginResult = new LoginResultMessage(
                 Result: LobbyResults.Ok,
@@ -499,14 +544,31 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnPublicDataRequest(SacredClient sender, PublicDataRequestMessage request)
     {
-        if (request.BlockId == Constants.ProfileBlockId)
+        // Anyone can ask for the cheater counter block
+        if (request.BlockId == Constants.CheaterCounterBlockId)
+        {
+            //TODO: Properly reverse this?
+            var ms = new MemoryStream();
+            var w = new BinaryWriter(ms);
+            var marker = 0x20202020;
+            w.Write(marker);
+            w.Write(0);
+            w.Write(new byte[6 * 4]);
+            var data = ms.ToArray();
+
+            var msg = new PublicDataMessage(request.PermId, 0, data.Length, 0, data.Length, data);
+            sender.SendPublicData(msg);
+
+            return (LobbyResults.Ok, null);
+        }
+        // Anyone can ask for a player's profile
+        else if (request.BlockId == Constants.ProfileBlockId)
         {
             var client = GetClientFromPermId(request.PermId);
 
             if (client != null)
             {
-                var data = client.Profile;
-                sender.SendProfileData(data);
+                sender.SendProfileData(client.Profile!);
                 return (LobbyResults.Ok, null);
             }
             else
@@ -515,34 +577,133 @@ internal static partial class LobbyServer
                 return (LobbyResults.ErrorUserNotFound, null);
             }
         }
+        // A character save is requested, investigate more
         else if (request.BlockId <= 8)
         {
-            Log.Error($"{sender.ClientName} Character requests aren't implemented yet!");
-            return (LobbyResults.InternalError, "Closed net isn't implemented yet!");
+            // Closed net servers can request full savegames
+            // The player can request it's own characters
+            // Else, it's someone else and needs to be booted
+            if (!sender.IsServer && request.PermId != sender.PermId)
+            {
+                Log.Warning($"{sender.ClientName} tried to ask another player's data!");
+
+                return (LobbyResults.ErrorNotAGame, null);
+            }
+
+            if (sender.IsAnonymous)
+            {
+                //HACK: Return an error only for the first blockId to not spam the user
+                if (request.BlockId == 1)
+                {
+                    sender.Kick("Anonymous accounts cannot play closednet, please register a new account to play!");
+                }
+                
+                return (LobbyResults.Ok, null);
+            }
+
+            var saveData = Database.GetSaveFile(request.PermId, request.BlockId);
+
+            if (saveData != null)
+            {
+                // We should send the whole savegame too
+                if (sender.IsServer)
+                {
+                    sender.SendSaveGame(saveData, request.PermId, request.BlockId);
+                }
+                else // Just the preview for the character selector
+                {
+                    var preview = saveData.GetCharacterPreview();
+                    sender.SendCharacter(preview, request.PermId, request.BlockId);
+                }
+            }
+
+            return (LobbyResults.Ok, null);
         }
         else
         {
             Log.Error($"{sender.ClientName} Requested public data with an invalid block {request}");
             return (LobbyResults.InvalidBlockSelected, null);
         }
+
     }
     private static (LobbyResults code, string? message) OnReceivePublicData(SacredClient sender, PublicDataMessage data)
     {
-        if (data.PermId == sender.PermId && data.BlockId == Constants.ProfileBlockId)
+        if(data.BlockId == 0)
         {
-            sender.Profile = data.ReadProfileData();
+            //Cheater counter
+            return (LobbyResults.ChangePublicDataSuccess, null);
+        }
+        else if (data.PermId == sender.PermId && data.BlockId == Constants.ProfileBlockId)
+        {
+            var profile = data.ReadProfileData();
+
+            sender.Profile = profile;
+
+            if (!sender.IsAnonymous)
+            {
+                Database.SetProfile(sender.PermId, profile);
+
+                int i = 0;
+                foreach (var name in profile.CharactersNames)
+                {
+                    i++;
+
+                    if (string.IsNullOrEmpty(name))
+                        continue;
+
+                    var saveFile = Database.GetSaveFile(data.PermId, i);
+
+                    if (saveFile == null)
+                        continue;
+
+                    var preview = saveFile.GetCharacterPreview();
+
+                    if(name == preview.Name)
+                        continue;
+
+                    preview = preview with
+                    {
+                        Name = name
+                    };
+
+                    saveFile.SetCharacterPreview(preview);
+
+                    Database.SetSaveFile(data.PermId, i, saveFile);
+                }
+            }
 
             sender.SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
 
             if (sender.IsInChannel)
             {
-
                 BroadcastProfile(sender.Profile);
             }
-            return (LobbyResults.Ok, null);
-        }
 
-        return (LobbyResults.InvalidBlockSelected, null);
+            return (LobbyResults.ChangePublicDataSuccess, null);
+        }
+        // We received a character savegame
+        else if (data.BlockId > 0 && data.BlockId <= 8)
+        {
+            if (!sender.IsServer)
+                return (LobbyResults.ErrorNotAGame, "Nice try cheating your save :P");
+
+            using var r = new BinaryReader(new MemoryStream(data.Data));
+
+            var preview = CharacterPreview.Deserialize(r.ReadBytes(556));
+            var compLength = r.ReadInt32();
+            var uncompLength = r.ReadInt32();
+            var compSaveData = r.ReadBytes(compLength);
+            var saveData = Utils.ZLibDecompress(compSaveData);
+            var saveFile = new SaveFile(saveData);
+            Database.SetSaveFile(data.PermId, data.BlockId, saveFile);
+
+            return (LobbyResults.ChangePublicDataSuccess, null);
+        }
+        else
+        {
+            Log.Error($"{sender.ClientName} tried to send an invalid block! ({data.BlockId})");
+            return (LobbyResults.InvalidBlockSelected, null);
+        }
     }
     private static (LobbyResults code, string? message) OnServerLoginRequest(SacredClient sender, ServerInfoMessage serverInfo)
     {
@@ -575,9 +736,16 @@ internal static partial class LobbyServer
 
     private static (LobbyResults code, string? message) OnServerChangePublicInfo(SacredClient sender, ServerInfoMessage newInfo)
     {
+        var flags = newInfo.Flags;
+        
+        // HACK: ClosedNet servers sometimes set the locked flag for no reason when in reality they're fine
+        // Work around this...
+        if(sender.IsInChannel)
+            flags &= ~ServerFlags.Locked;
+
         sender.ServerInfo = sender.ServerInfo! with
         {
-            Flags = newInfo.Flags,
+            Flags = flags,
             MaxPlayers = newInfo.MaxPlayers,
             PlayerCount = newInfo.PlayerCount
         };
@@ -597,14 +765,6 @@ internal static partial class LobbyServer
         sender.SelectedCharacter = data.BlockId;
         return (LobbyResults.Ok, null);
     }
-    private static (LobbyResults code, string? message) OnReceiveClientPublicDataFromServer(SacredClient sender, PublicDataMessage data)
-    {
-        return (LobbyResults.InternalError, "Not implemented yet");
-    }
-    private static (LobbyResults code, string? message) OnServerRequestsClientsPublicData(SacredClient sender, PublicDataRequestMessage data)
-    {
-        return (LobbyResults.InternalError, "Not implemented yet");
-    }
     private static (LobbyResults code, string? message) OnServerListRequest(SacredClient sender, RequestServerListMessage data)
     {
         var id = data.ChannelId;
@@ -617,14 +777,27 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnChannelListRequest(SacredClient sender)
     {
-        return (LobbyResults.InternalError, "Not implemented yet");
+        var channelInfo = new ChannelInfo(
+            "Test Channel",
+            false,
+            1 | 0x100,
+            0,
+            0,
+            0
+        );
+
+        List<ChannelInfo> channelList = [channelInfo];
+
+        sender.SendChannelList(channelList);
+
+        return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnChannelJoinRequest(SacredClient sender, JoinChannelMessage data)
     {
         int channel = data.ChannelId;
         Log.Warning($"{sender.ClientName} asked to join channel {channel}, but channels aren't implemented yet!");
 
-        if(sender.Profile == null)
+        if (sender.Profile == null)
         {
             return (LobbyResults.InternalError, "This client doesn't have profile data!");
         }
@@ -643,7 +816,7 @@ internal static partial class LobbyServer
                 user.SendProfileData(sender.Profile);
 
                 // Send us the client's data
-                if(user.Profile != null)
+                if (user.Profile != null)
                     sender.SendProfileData(user.Profile);
             }
         }
@@ -725,7 +898,16 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnClosedNetNewCharacter(SacredClient sender, ClosedNetNewCharacterMessage data)
     {
-        return (LobbyResults.InternalError, "Not implemented yet");
+        if (sender.IsAnonymous)
+        {
+            return (LobbyResults.InternalError, "Anonymous accounts cannot play closednet!");
+        }
+
+        data.Deconstruct(out var blockId, out var templateId);
+
+        Database.InitSaveFile(sender.PermId, blockId, templateId, sender.Profile!.CharactersNames[data.BlockId-1]);
+
+        return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnUserJoinedServer(SacredClient sender, UserJoinedServerMessage data)
     {
@@ -734,7 +916,7 @@ internal static partial class LobbyServer
         if (client != null)
         {
             var accName = client.ClientName;
-            var charName = client.Profile.SelectedCharacter.Name;
+            var charName = client.Profile!.SelectedCharacter.Name;
             var gameName = sender.ServerInfo!.Name;
             BroadcastSystemMessage($"\\cFFFFFFFF - {accName}\\cFFFFFFFF joined {gameName}\\cFFFFFFFF with character {charName}");
 
