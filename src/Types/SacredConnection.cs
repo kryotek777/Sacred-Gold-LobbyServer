@@ -93,6 +93,15 @@ public class SacredConnection
         {
             Started = false;
             CancellationTokenSource.Cancel();
+
+            // Flush remaining messages
+            SendQueue.CompleteAdding();
+            while(Socket.Connected && SendQueue.Count > 0)
+            {
+                var (type, data) = SendQueue.Take();
+                SendSacredPacket(type, data);
+            }
+
             Client.Stop();
         }
     }
