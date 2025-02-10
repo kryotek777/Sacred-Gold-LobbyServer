@@ -63,6 +63,42 @@ TemplatePath = "./Data/Templates/"
 # Allow unregistered users to log in with any username
 AllowAnonymousLogin = true
 
+# The following is the channel list that's visible in closednet
+# WARNING: Ensure there's always a channel with ID=6 with no flags, that's dedicated for OpenNet and hardcoded in the game!
+
+# Valid value for the "Flags" field are: 
+# - None: Open Net server with no requirements
+# - Official: Visible in Closed Net, this is required
+# - Noob: Player must be below level 10
+# - Bronze: Bronze difficulty
+# - Silver: Silver difficulty
+# - Gold: Gold difficulty
+# - Platinum: Platinum difficulty
+# - Niobium: Niobium difficulty
+# - Cheater: Player must be over level 200
+# - Hardcore: Only hardcore characters!
+# - Clan: Only clan members (not supported)
+# - Special: Only special members (not supported)
+# - VIP: Only VIP members (not supported)
+# - Private: Private/Custom games
+
+# WARNING: This first channel should not be changed unless you know what you are doing!
+[[Channels]]
+Name = "Open Net"
+Flags = "None"
+Id = 6
+
+# You can change and add these as you please, but please skip channel 6!
+[[Channels]]
+Name = "Anyone"
+Flags = "ClosedNet"
+Id = 1
+
+[[Channels]]
+Name = "Hardcore only!"
+Flags = "ClosedNet, Hardcore"
+Id = 2
+
 # Here you can ban people by their ip address
 # Bans can be of three types
 # Full: The connection is dropped instantly without even attemping to figure out the client's type.

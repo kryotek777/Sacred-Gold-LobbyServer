@@ -70,18 +70,27 @@ public unsafe record ChannelListMessage(
 
 public unsafe record ChannelInfo(
     string Name,
-    bool AuthorizedOnly,
-    uint Flags,
+    ChannelFlags Flags,
     ushort Id,
     ushort UserCount,
     ushort GameCount
 )
-{
+{  
+    public ChannelInfo() : this(
+        Name: "",
+        Flags: ChannelFlags.None,
+        Id: 0,
+        UserCount: 0,
+        GameCount: 0
+    )
+    {
+
+    }
+
     public ChannelInfo(ChannelInfoData data)
         : this(
             Utils.DeserializeString(new ReadOnlySpan<byte>(data.Name, Constants.NameMaxLength)),
-            data.AuthorizedOnly,
-            data.Flags,
+            (ChannelFlags)data.Flags,
             data.Id,
             data.UserCount,
             data.GameCount
@@ -92,8 +101,8 @@ public unsafe record ChannelInfo(
     {
         ChannelInfoData result = new();
         Utils.SerializeString(Name, new Span<byte>(result.Name, Constants.NameMaxLength));
-        result.AuthorizedOnly = AuthorizedOnly;
-        result.Flags = Flags;
+        result.AuthorizedOnly = true;
+        result.Flags = (uint)Flags;
         result.Id = Id;
         result.UserCount = UserCount;
         result.GameCount = GameCount;

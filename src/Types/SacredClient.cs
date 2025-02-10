@@ -62,10 +62,8 @@ public class SacredClient
     {
         SendPacket(SacredMsgType.SendChatMessage, message);
     }
-    public void SendServerList()
+    public void SendServerList(IEnumerable<ServerInfoMessage> infos)
     {
-        var infos = LobbyServer.GetAllServerInfos();
-
         foreach (var info in infos)
         {
             SendPacket(SacredMsgType.SendServerInfo, info);

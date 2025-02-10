@@ -21,7 +21,8 @@ internal static partial class LobbyServer
     public static readonly IEnumerable<SacredClient> Users = Clients.Where(c => c.ClientType == ClientType.User);
     public static readonly IEnumerable<SacredClient> Servers = Clients.Where(c => c.ClientType == ClientType.Server);
     private static readonly Channel<SacredPacket> ReceivedPackets = Channel.CreateUnbounded<SacredPacket>();
-    private static ConcurrentQueue<ChatMessage> ChatHistory = new();
+    private static readonly ConcurrentQueue<ChatMessage> ChatHistory = new();
+    private static List<ChannelInfo> ChannelList => Config.Instance.Channels;
 
     public static Task Run()
     {
@@ -90,18 +91,6 @@ internal static partial class LobbyServer
         }
 
         return value;
-    }
-
-    public static List<ServerInfoMessage> GetAllServerInfos()
-    {
-        var serverList = Servers
-            .Where(x => x.ServerInfo != null)
-            .Select(x => x.ServerInfo)
-            .Concat(separators)
-            .Where(x => x != null)
-            .ToList();
-
-        return serverList!;
     }
 
     public static void BroadcastProfile(ProfileData profile)
@@ -672,8 +661,6 @@ internal static partial class LobbyServer
                 }
             }
 
-            sender.SendLobbyResult(LobbyResults.ChangePublicDataSuccess, SacredMsgType.ReceivePublicData);
-
             if (sender.IsInChannel)
             {
                 BroadcastProfile(sender.Profile);
@@ -722,14 +709,24 @@ internal static partial class LobbyServer
         {
             ExternalIp = externalIP,
             ServerId = sender.ConnectionId,
-            ChannelId = 0
         };
+
+        var channel = ChannelList.FirstOrDefault(x => x.Id == serverInfo.ChannelId);
+
+        if(channel == null)
+        {
+            Log.Info($"Server {serverInfo.Name} tried to log in into non-existing channel {serverInfo.ChannelId}!");
+            sender.Stop();
+            return (LobbyResults.GameLoginNotAllowed, "Tried to log in into non-existing channel");
+        }
+        
+        sender.JoinChannel(serverInfo.ChannelId);
 
         sender.SendServerLoginResult(externalIP);
 
         BroadcastServerInfo(sender.ServerInfo);
 
-        Log.Info($"{sender.ClientName} logged in as a server!");
+        Log.Info($"{sender.ClientName} logged in as a server on channel {channel.Name}!");
 
         return (LobbyResults.Ok, null);
     }
@@ -767,47 +764,48 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnServerListRequest(SacredClient sender, RequestServerListMessage data)
     {
-        var id = data.ChannelId;
+        var serverList = Servers
+            .Where(server => server.ServerInfo != null)   
+            .Select(server => server.ServerInfo!)
+            .Where(info => info.ChannelId == sender.Channel)
+            .Concat(separators.Select(separator =>
+            separator with
+            {
+                ChannelId = sender.Channel
+            }));
 
-        Log.Warning($"{sender.ClientName} requested the server list for channel {id}, but channels aren't implemented yet!");
-
-        sender.SendServerList();
+        sender.SendServerList(serverList);
 
         return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnChannelListRequest(SacredClient sender)
     {
-        var channelInfo = new ChannelInfo(
-            "Test Channel",
-            false,
-            1 | 0x100,
-            0,
-            0,
-            0
-        );
-
-        List<ChannelInfo> channelList = [channelInfo];
-
-        sender.SendChannelList(channelList);
+        sender.SendChannelList(ChannelList);
 
         return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnChannelJoinRequest(SacredClient sender, JoinChannelMessage data)
     {
-        int channel = data.ChannelId;
-        Log.Warning($"{sender.ClientName} asked to join channel {channel}, but channels aren't implemented yet!");
+        var channel = ChannelList.FirstOrDefault(x => x.Id == data.ChannelId);
+        
+        if(channel == null)
+        {
+            Log.Warning($"{sender.ClientName} tried to join channel with id {data.ChannelId} but it doesn't exist!");
+            return (LobbyResults.InternalError, "Tried to join non-existing channel!");
+        }
 
         if (sender.Profile == null)
         {
+            Log.Error($"{sender.ClientName} has no profile data. This is a bug!");
             return (LobbyResults.InternalError, "This client doesn't have profile data!");
         }
 
-        sender.JoinChannel(0);
+        sender.JoinChannel(data.ChannelId);
         sender.SendChannelChatMessage();
 
         foreach (var user in Users)
         {
-            if (user.IsInChannel && user != sender)
+            if (user.Channel == sender.Channel && user != sender)
             {
                 // I know there's a specific message to notify that a user has joined a channel!
                 // But just sending the profile data works anyway, saves us a packet and prevents flickering in the user list!
@@ -826,21 +824,26 @@ internal static partial class LobbyServer
             sender.SendChatMessage(chatMessage with { DestinationPermId = sender.PermId });
         }
 
+        Log.Info($"{sender.ClientName} joined channel {channel.Name}");
         BroadcastSystemMessage($"\\cFFFFFFFF - {sender.ClientName}\\cFF00FF00 joined the channel");
 
         return (LobbyResults.Ok, null);
     }
     private static (LobbyResults code, string? message) OnChannelLeaveRequest(SacredClient sender)
     {
-        if (sender.Channel != -1)
+        if (sender.IsInChannel)
         {
-            sender.Channel = -1;
+            var channel = ChannelList.First(x => sender.Channel == x.Id);
+
             foreach (var user in Users)
             {
-                if (user.IsInChannel && user.ConnectionId != sender.ConnectionId)
+                if (user.Channel == sender.Channel && user.ConnectionId != sender.ConnectionId)
                     user.OtherUserLeftChannel(sender.PermId, sender.ClientName);
             }
 
+            sender.Channel = -1;
+
+            Log.Info($"{sender.ClientName} left channel {channel.Name}");
             BroadcastSystemMessage($"\\cFFFFFFFF - {sender.ClientName}\\cFFFF0000 left the channel");
         }
         return (LobbyResults.Ok, null);

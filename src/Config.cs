@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using Lobby.Types.Messages;
 using Tomlyn;
 
 namespace Lobby;
@@ -23,6 +24,7 @@ public class Config
     public string SavesPath { get; set; }
     public string TemplatePath { get; set; }
     public bool AllowAnonymousLogin { get; set;}
+    public List<ChannelInfo> Channels { get; set; }
 
     public Config()
     {
@@ -40,6 +42,7 @@ public class Config
         AllowAnonymousLogin = true;
         SavesPath = "";
         TemplatePath = "";
+        Channels = new();
     }
 
     public static bool Load([NotNullWhen(false)] out string? error)
@@ -71,8 +74,12 @@ public class Config
 
                 Instance = Toml.ToModel<Config>(text, options: options);
 
+                // Without persistent data we can't restrict logins, the lobby would be useless
                 if(Instance.StorePersistentData == false)
                     Instance.AllowAnonymousLogin = true;
+
+                // Fix the channel list to a format that the game likes
+                Instance.FixChannelList();
 
                 error = null;
                 return true;
@@ -94,4 +101,26 @@ public class Config
 
     public bool IsBanned(IPAddress ip, BanType banType) =>
         banType != BanType.None && Bans.Any(x => x.Ip.Equals(ip) && x.BanType == banType);
+
+    private void FixChannelList()
+    {
+        // This game is dumb and doesn't actually use the ID specified in the channel struct
+        // Instead, it expects the fully ordered list, with empty entries inbetween
+        // Just... don't ask. Please.
+
+        var maxId = Channels.Max(x => x.Id);
+        var newList = new List<ChannelInfo>(capacity: maxId);
+
+        for (int i = 1; i <= maxId; i++)
+        {
+            var chan = (Channels.FirstOrDefault(x => x.Id == i) ?? new ChannelInfo()) with
+            {
+                Id = (ushort)(i - 1)
+            };
+
+            newList.Add(chan);
+        }
+
+        Channels = newList;
+    }
 }
