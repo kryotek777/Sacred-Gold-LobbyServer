@@ -95,12 +95,12 @@ public class SacredConnection
             CancellationTokenSource.Cancel();
 
             // Flush remaining messages
-            SendQueue.CompleteAdding();
             while(Socket.Connected && SendQueue.Count > 0)
             {
                 var (type, data) = SendQueue.Take();
                 SendSacredPacket(type, data);
             }
+            SendQueue.CompleteAdding();
 
             Client.Stop();
         }
@@ -108,7 +108,16 @@ public class SacredConnection
 
     public void EnqueuePacket(SacredMsgType type, byte[] data)
     {
-        SendQueue.Add((type, data));
+        try
+        {
+            if(!SendQueue.IsCompleted)
+                SendQueue.Add((type, data));
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Exception while reading packet: {ex}");
+            Stop();
+        }
     }
 
     private void ReadLoop(CancellationToken token)
