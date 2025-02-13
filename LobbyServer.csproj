@@ -18,6 +18,11 @@
   <ItemGroup>
     <Content Include="config.toml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> 
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>    
+    <Content Include="Data/Templates/**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> 
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
   </ItemGroup>
 
