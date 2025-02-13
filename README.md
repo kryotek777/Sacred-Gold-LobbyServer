@@ -18,11 +18,9 @@ This reimplementation aims to recreate the functionality of the original lobby s
 ### Implemented
 - **Login**: The servers once required registration on the ascaron website, here any username and password combination will do.
 - **Open Net**: This gamemode allows you to use your local characters to play online!
+- **Closed Net**: In this competitive gamemode the lobbyserver stores your characters so you can't load cheated ones.
 - **Server List**: GameServers can connect to the lobbyserver and be added to the list of available servers
 - **Lobby Chat**: You can now chat with other players and see other characters in the lobby
-
-### Not implemented
-- **Closed Net**: In this gamemode the lobbyserver stores your characters so you can't load cheated ones.
 
 ## Getting Started
 
@@ -76,22 +74,13 @@ To get started with this reimplementation, follow these steps:
 2. **Build the Project**: Using Visual Studio or the .NET CLI, build the lobby server project:
 
     ```bash
-    dotnet build LobbyServer.csproj
+    dotnet build
     ```
 
-3. **Run the Lobby Server**: Navigate to the output directory containing the built executable and run it:
+3. **Run the Lobby Server**: Using the dotnet CLI run:
 
-    - **Windows**:
-    ```cmd
-    cd bin/Debug/net8.0
-    LobbyServer.exe
-    ```
-
-    - **Linux**:
     ```bash
-    cd bin/Debug/net8.0
-    chmod +x LobbyServer
-    ./LobbyServer
+    dotnet run
     ```
 
 ## Contributing
