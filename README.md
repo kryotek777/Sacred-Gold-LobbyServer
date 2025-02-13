@@ -16,7 +16,7 @@ This reimplementation aims to recreate the functionality of the original lobby s
 ## Features
 
 ### Implemented
-- **Login**: The servers once required registration on the ascaron website, here any username and password combination will do.
+- **Accounts**: The servers once required registration on the ascaron website, now the lobby handles everything!
 - **Open Net**: This gamemode allows you to use your local characters to play online!
 - **Closed Net**: In this competitive gamemode the lobbyserver stores your characters so you can't load cheated ones.
 - **Server List**: GameServers can connect to the lobbyserver and be added to the list of available servers
