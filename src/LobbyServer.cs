@@ -701,7 +701,7 @@ internal static partial class LobbyServer
             return (LobbyResults.ErrorUserBanned, null);
         }
 
-        IPAddress externalIP = sender.RemoteEndPoint.Address.IsInternal() ? Utils.GetExternalIp() : sender.RemoteEndPoint.Address;
+        IPAddress externalIP = sender.RemoteEndPoint.Address.IsInternal() ? Utils.ExternalIp : sender.RemoteEndPoint.Address;
 
         sender.ClientType = ClientType.Server;
         sender.ClientName = serverInfo.Name;

@@ -9,6 +9,7 @@ namespace Lobby;
 internal static class Utils
 {
     public static readonly Encoding Windows1252Encoding;
+    public static readonly IPAddress ExternalIp; 
     private const string EncryptionKey = "Sacred";
 
     static Utils()
@@ -16,6 +17,8 @@ internal static class Utils
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
         Windows1252Encoding = Encoding.GetEncoding(1252);
+
+        ExternalIp = GetExternalIp();
     }
 
     public static Task RunTask(Action<CancellationToken> action, CancellationToken token)
@@ -56,7 +59,7 @@ internal static class Utils
         return result;
     }
 
-    public static IPAddress GetExternalIp()
+    private static IPAddress GetExternalIp()
     {
         using var cl = new HttpClient();
         var str = cl.GetStringAsync("http://icanhazip.com").Result;
