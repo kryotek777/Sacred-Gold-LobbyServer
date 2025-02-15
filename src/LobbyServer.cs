@@ -240,7 +240,11 @@ internal static partial class LobbyServer
         }
         catch (OperationCanceledException)
         {
-            return;
+            Log.Trace("Processing thread stopped");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Processing thread crashed! {ex}");
         }
     }
 

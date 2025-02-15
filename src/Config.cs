@@ -26,6 +26,8 @@ public class Config
     public bool AllowAnonymousLogin { get; set;}
     public List<ChannelInfo> Channels { get; set; }
 
+    public bool SkipSecurityChecks { get; set; }
+
     public Config()
     {
         Port = 7066;

@@ -95,7 +95,7 @@ public class SacredConnection
             CancellationTokenSource.Cancel();
 
             // Flush remaining messages
-            while(Socket.Connected && SendQueue.Count > 0)
+            while (Socket.Connected && SendQueue.Count > 0)
             {
                 var (type, data) = SendQueue.Take();
                 SendSacredPacket(type, data);
@@ -110,7 +110,7 @@ public class SacredConnection
     {
         try
         {
-            if(!SendQueue.IsCompleted)
+            if (!SendQueue.IsCompleted)
                 SendQueue.Add((type, data));
         }
         catch (Exception ex)
@@ -126,25 +126,7 @@ public class SacredConnection
         {
             while (!token.IsCancellationRequested && Socket.Connected)
             {
-                var error = ReadPacket();
-
-                if (error != PacketError.None)
-                {
-                    var message = error switch
-                    {
-                        PacketError.WrongMagic => "Wrong magic number, not a TinCat packet?",
-                        PacketError.WrongChecksum => "CRC32 check failed!",
-                        PacketError.PacketUnexpected => "Unexpected TinCat packet",
-                        PacketError.WrongModuleId => "Wrong module id!",
-                        PacketError.SecurityTypeMismatch => "Types don't match, packet is corrupt",
-                        PacketError.SecurityWrongKey => "Security key is wrong!",
-                        PacketError.SecurityNotAllowed => "Packet not allowed from this type of client",
-                        PacketError.SecurityLengthMismatch => "Packet length is wrong!",
-                        _ => "Unknown error"
-                    };
-
-                    Log.Error($"{Client.ClientName}: {message}");
-                }
+                ReadPacket();
             }
         }
         catch (OperationCanceledException)
@@ -195,7 +177,7 @@ public class SacredConnection
         }
     }
 
-    private PacketError ReadPacket()
+    private void ReadPacket()
     {
         // Read the TinCat header
         Span<byte> headerData = stackalloc byte[TincatHeaderSize];
@@ -206,7 +188,8 @@ public class SacredConnection
         // Not a TinCat header
         if (header.Magic != TincatMagic)
         {
-            return PacketError.WrongMagic;
+            Log.Error($"{Client.ClientName}: Wrong magic number {header.Magic:X}, not a TinCat packet?");
+            return;
         }
 
         // Read the payload
@@ -218,14 +201,16 @@ public class SacredConnection
 
         if (header.Checksum != checksum)
         {
-            return PacketError.WrongChecksum;
+            Log.Error($"{Client.ClientName}: CRC32 check failed!");
+            return;
         }
 
         // Dispatch the packet
         switch (header.Type)
         {
             case TincatMsgType.CUSTOMDATA:
-                return OnCustomData(payloadData);
+                OnCustomData(payloadData);
+                break;
             case TincatMsgType.LOGMEON:
                 OnLogMeOn(LogOn.Deserialize(payloadData));
                 break;
@@ -239,10 +224,13 @@ public class SacredConnection
                 break;
 
             default:
-                return PacketError.PacketUnexpected;
+                {
+                    Log.Error($"{Client.ClientName}: Unexpected TinCat packet {(int)header.Type:X}!");
+                    break;
+                }
         }
 
-        return PacketError.None;
+        return;
     }
 
     private void SendTincatPacket(TincatMsgType type, ReadOnlySpan<byte> data)
@@ -302,53 +290,63 @@ public class SacredConnection
     }
 
 
-    private PacketError OnCustomData(SpanReader reader)
+    private void OnCustomData(SpanReader reader)
     {
         var moduleId = reader.ReadUInt16();
         var type = (SacredMsgType)reader.ReadInt16();
         var securityHeader = PacketSecurityHeader.Deserialize(ref reader);
 
-        // Wrong module id
-        if (moduleId != ModuleId)
+        if (!Config.Instance.SkipSecurityChecks)
         {
-            return PacketError.WrongModuleId;
-        }
 
-        // TODO: Checksum
-        // I'm pretty sure it's a checksum, but there's something weird going on
-        // For now we're gonna skip it, I haven't seen a single corrupted packet yet
-        // And we're covered by the TinCat's checksum too
+            // Wrong module id
+            if (moduleId != ModuleId)
+            {
+                Log.Error($"{Client.ClientName}: Wrong module id {moduleId:X}!");
+                return;
+            }
 
-        // Check the security data
+            // TODO: Checksum
+            // I'm pretty sure it's a checksum, but there's something weird going on
+            // For now we're gonna skip it, I haven't seen a single corrupted packet yet
+            // And we're covered by the TinCat's checksum too
 
-        // Is the reduntant type the same?
-        if (securityHeader.Type != type)
-        {
-            return PacketError.SecurityTypeMismatch;
-        }
+            // Check the security data
 
-        var securityData = PacketSecurityData.Get(type);
+            // Is the reduntant type the same?
+            if (securityHeader.Type != type)
+            {
+                Log.Error($"{Client.ClientName}: Types don't match, packet is corrupt");
+                return;
+            }
 
-        // Have we got the right security key?
-        if (securityHeader.SecurityKey != securityData.SecurityKey)
-        {
-            return PacketError.SecurityWrongKey;
-        }
+            var securityData = PacketSecurityData.Get(type);
 
-        // Is this packet allowed from this connection type?
-        if (
-            (!securityData.FromClient && ClientType == ClientType.User) ||
-            (!securityData.FromServer && ClientType == ClientType.Server) ||
-            (!securityData.FromUnknown && ClientType == ClientType.Unknown)
-        )
-        {
-            return PacketError.SecurityNotAllowed;
-        }
+            // Have we got the right security key?
+            if (securityHeader.SecurityKey != securityData.SecurityKey)
+            {
+                Log.Error($"{Client.ClientName}: Security key is wrong!");
+                return;
+            }
 
-        // Is the packet the right length?
-        if (!securityData.DynamicSize && securityData.Length != reader.Span.Length - 4)
-        {
-            return PacketError.SecurityLengthMismatch;
+            // Is this packet allowed from this connection type?
+            if (
+                (!securityData.FromClient && ClientType == ClientType.User) ||
+                (!securityData.FromServer && ClientType == ClientType.Server) ||
+                (!securityData.FromUnknown && ClientType == ClientType.Unknown)
+            )
+            {
+                Log.Error($"{Client.ClientName}: Packet {type} not allowed from this client of type {ClientType}!");
+                return;
+            }
+
+            // Is the packet the right length?
+            if (!securityData.DynamicSize && securityData.Length != reader.Span.Length - 4)
+            {
+                Log.Error($"{Client.ClientName}: Packet length is wrong!");
+                return;
+            }
+
         }
 
         // Packet is valid, dispatch it's payload
@@ -359,6 +357,6 @@ public class SacredConnection
 
         LobbyServer.ReceivePacket(packet);
 
-        return PacketError.None;
+        return;
     }
 }
