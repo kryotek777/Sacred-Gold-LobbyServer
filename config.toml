@@ -1,3 +1,4 @@
+SkipSecurityChecks = false
 
 # The TCP port on which the lobby will listen.
 # Ensure that clients configure this port in their NETWORK_LOBBYPORT 
@@ -125,5 +126,3 @@ Reason = "Cheated characters"
 Ip = "169.254.0.2"
 BanType = "ServerOnly"
 Reason = "Unstable servers that always crash"
-
-SkipSecurityChecks = false
