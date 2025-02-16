@@ -113,14 +113,14 @@ public class Config
         var maxId = Channels.Max(x => x.Id);
         var newList = new List<ChannelInfo>(capacity: maxId);
 
-        for (int i = 1; i <= maxId; i++)
+        for (int i = 0; i < maxId; i++)
         {
-            var chan = (Channels.FirstOrDefault(x => x.Id == i) ?? new ChannelInfo()) with
+            var chan = Channels.FirstOrDefault(x => x.Id == (i + 1)) ?? new ChannelInfo() 
             {
-                Id = (ushort)(i - 1)
+                Name = $"Error #{i}"
             };
 
-            newList.Add(chan);
+            newList.Add(chan with { Id = (ushort)i });
         }
 
         Channels = newList;
