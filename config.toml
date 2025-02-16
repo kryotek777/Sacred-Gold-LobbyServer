@@ -1,5 +1,3 @@
-SkipSecurityChecks = false
-
 # The TCP port on which the lobby will listen.
 # Ensure that clients configure this port in their NETWORK_LOBBYPORT 
 # setting within both Settings.cfg and GameServer.cfg.
@@ -63,6 +61,10 @@ TemplatePath = "./Data/Templates/"
 
 # Allow unregistered users to log in with any username
 AllowAnonymousLogin = true
+
+# Skip security checks made on packets. This allows any type of client to send any type of packets. 
+# Useful with misbehaving mods
+SkipSecurityChecks = false
 
 # The following is the channel list that's visible in closednet
 # WARNING: Ensure there's always a channel with ID=6 with no flags, that's dedicated for OpenNet and hardcoded in the game!

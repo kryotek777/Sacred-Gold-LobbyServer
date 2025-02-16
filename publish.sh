@@ -17,3 +17,11 @@ done
 
 # Generic cross-platform version
 dotnet publish -c Release -o ./publish/cross-platform
+
+cd ./publish
+
+tar -zcvf linux-x64.tar.gz ./linux-x64
+tar -zcvf linux-arm.tar.gz ./linux-arm
+tar -zcvf linux-arm64.tar.gz ./linux-arm64
+zip -r win-x64.zip ./win-x64
+zip -r cross-platform.zip ./cross-platform
