@@ -226,26 +226,38 @@ internal static partial class LobbyServer
 
     private static async Task ProcessLoopAsync(CancellationToken token)
     {
-        try
+        await Task.Factory.StartNew(async () =>
         {
-            var reader = ReceivedPackets.Reader;
-
-            while (!token.IsCancellationRequested)
+            try
             {
-                var packet = await reader.ReadAsync(token);
-                packet.Deconstruct(out var sender, out var type, out var payload);
-                //sender.ReceivePacket(type, payload);
-                ProcessPacket(packet);
+                var reader = ReceivedPackets.Reader;
+
+                while (!token.IsCancellationRequested)
+                {
+                    SacredClient? sender = null;
+
+                    try
+                    {
+                        var packet = await reader.ReadAsync(token);
+                        packet.Deconstruct(out sender, out var type, out var payload);
+                        ProcessPacket(packet);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"Error while processing packet! Sender: {sender?.ClientName ?? "null"} Exception: {ex}");
+                    }
+                }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            Log.Trace("Processing thread stopped");
-        }
-        catch (Exception ex)
-        {
-            Log.Error($"Processing thread crashed! {ex}");
-        }
+            catch (OperationCanceledException)
+            {
+                Log.Trace("Processing thread stopped");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Processing thread crashed! {ex}");
+            }
+        }, token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
+
     }
 
     private static void ProcessPacket(SacredPacket packet)
@@ -590,7 +602,7 @@ internal static partial class LobbyServer
                 {
                     sender.Kick("Anonymous accounts cannot play closednet, please register a new account to play!");
                 }
-                
+
                 return (LobbyResults.Ok, null);
             }
 
@@ -621,7 +633,7 @@ internal static partial class LobbyServer
     }
     private static (LobbyResults code, string? message) OnReceivePublicData(SacredClient sender, PublicDataMessage data)
     {
-        if(data.BlockId == 0)
+        if (data.BlockId == 0)
         {
             //Cheater counter
             return (LobbyResults.ChangePublicDataSuccess, null);
@@ -651,7 +663,7 @@ internal static partial class LobbyServer
 
                     var preview = saveFile.GetCharacterPreview();
 
-                    if(name == preview.Name)
+                    if (name == preview.Name)
                         continue;
 
                     preview = preview with
@@ -717,13 +729,13 @@ internal static partial class LobbyServer
 
         var channel = ChannelList.FirstOrDefault(x => x.Id == serverInfo.ChannelId);
 
-        if(channel == null)
+        if (channel == null)
         {
             Log.Info($"Server {serverInfo.Name} tried to log in into non-existing channel {serverInfo.ChannelId}!");
             sender.Stop();
             return (LobbyResults.GameLoginNotAllowed, "Tried to log in into non-existing channel");
         }
-        
+
         sender.JoinChannel(serverInfo.ChannelId);
 
         sender.SendServerLoginResult(externalIP);
@@ -738,13 +750,13 @@ internal static partial class LobbyServer
     private static (LobbyResults code, string? message) OnServerChangePublicInfo(SacredClient sender, ServerInfoMessage newInfo)
     {
         var flags = newInfo.Flags;
-        
+
         // HACK: ClosedNet servers sometimes set the locked flag for no reason when in reality they're fine
         // Work around this...
-        if(sender.IsInChannel)
+        if (sender.IsInChannel)
             flags &= ~ServerFlags.Locked;
 
-        sender.ServerInfo = sender.ServerInfo! with
+        sender.ServerInfo = sender.ServerInfo ?? newInfo with
         {
             Flags = flags,
             MaxPlayers = newInfo.MaxPlayers,
@@ -769,7 +781,7 @@ internal static partial class LobbyServer
     private static (LobbyResults code, string? message) OnServerListRequest(SacredClient sender, RequestServerListMessage data)
     {
         var serverList = Servers
-            .Where(server => server.ServerInfo != null)   
+            .Where(server => server.ServerInfo != null)
             .Select(server => server.ServerInfo!)
             .Where(info => info.ChannelId == sender.Channel)
             .Concat(separators.Select(separator =>
@@ -791,8 +803,8 @@ internal static partial class LobbyServer
     private static (LobbyResults code, string? message) OnChannelJoinRequest(SacredClient sender, JoinChannelMessage data)
     {
         var channel = ChannelList.FirstOrDefault(x => x.Id == data.ChannelId);
-        
-        if(channel == null)
+
+        if (channel == null)
         {
             Log.Warning($"{sender.ClientName} tried to join channel with id {data.ChannelId} but it doesn't exist!");
             return (LobbyResults.InternalError, "Tried to join non-existing channel!");
@@ -912,7 +924,7 @@ internal static partial class LobbyServer
 
         data.Deconstruct(out var blockId, out var templateId);
 
-        Database.InitSaveFile(sender.PermId, blockId, templateId, sender.Profile!.CharactersNames[data.BlockId-1]);
+        Database.InitSaveFile(sender.PermId, blockId, templateId, sender.Profile!.CharactersNames[data.BlockId - 1]);
 
         return (LobbyResults.Ok, null);
     }
