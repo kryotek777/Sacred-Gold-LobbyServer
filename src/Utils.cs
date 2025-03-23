@@ -62,7 +62,7 @@ internal static class Utils
     private static IPAddress GetExternalIp()
     {
         using var cl = new HttpClient();
-        var str = cl.GetStringAsync("http://icanhazip.com").Result;
+        var str = cl.GetStringAsync("http://ipv4.icanhazip.com").Result;
         var ip = IPAddress.Parse(str.AsSpan().Trim('\n'));
         return ip;
     }
