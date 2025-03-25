@@ -81,33 +81,6 @@ internal static class Utils
         };
     }
 
-    public static int ToInt(this IPAddress ip)
-    {
-        return BitConverter.ToInt32(ip.GetAddressBytes());
-    }
-
-    public static void FormatBytes(ReadOnlySpan<byte> data, StringBuilder sb)
-    {
-        const int lineLength = 8;
-        for (int i = 0; i < data.Length;)
-        {
-            var b = data[i];
-            char c = (char)b;
-
-            sb.Append($"{b:X2} [{(char.IsControl(c) ? ' ' : c)}] ");
-
-            if (++i % lineLength == 0)
-                sb.AppendLine();
-        }
-    }
-
-    public static string FormatBytes(ReadOnlySpan<byte> data)
-    {
-        var sb = new StringBuilder();
-        FormatBytes(data, sb);
-        return sb.ToString();
-    }
-
     public static string DeserializeString(ReadOnlySpan<byte> data) => Win1252ToString(data);
     public static void SerializeString(string str, Span<byte> data) => StringToWin1252(str, data);
 
