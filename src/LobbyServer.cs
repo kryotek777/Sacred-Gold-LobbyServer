@@ -246,6 +246,10 @@ internal static partial class LobbyServer
                         packet.Deconstruct(out sender, out var type, out var payload);
                         ProcessPacket(packet);
                     }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         Log.Error($"Error while processing packet! Sender: {sender?.ClientName ?? "null"} Exception: {ex}");
