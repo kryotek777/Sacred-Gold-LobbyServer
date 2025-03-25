@@ -786,8 +786,22 @@ internal static partial class LobbyServer
     {
         var serverList = Servers
             .Where(server => server.ServerInfo != null)
-            .Select(server => server.ServerInfo!)
-            .Where(info => info.ChannelId == sender.Channel)
+            .Where(server => server.ServerInfo!.ChannelId == sender.Channel)
+            .Select(server => 
+            {
+                // If both server and client are on our machine, patch the IP Address
+                if(
+                    IPAddress.IsLoopback(sender.RemoteEndPoint.Address) &&
+                    IPAddress.IsLoopback(server.RemoteEndPoint.Address))
+                {
+                    return server.ServerInfo! with
+                    {
+                        ExternalIp = IPAddress.Loopback
+                    };
+                }
+                else 
+                    return server.ServerInfo!;
+            })
             .Concat(separators.Select(separator =>
             separator with
             {
