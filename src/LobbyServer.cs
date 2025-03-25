@@ -50,8 +50,12 @@ internal static partial class LobbyServer
 
     public static void ReceivePacket(SacredPacket packet)
     {
-        // No need to check the returned bool, this will always succeed with an unbounded channel
-        ReceivedPackets.Writer.TryWrite(packet);
+        var written = ReceivedPackets.Writer.TryWrite(packet);
+        
+        if(!written && !cancellationTokenSource.Token.IsCancellationRequested)
+        {
+            Log.Error("Failed to write packet to the processing queue!");
+        }
     }
 
     public static void RemoveClient(SacredClient client)

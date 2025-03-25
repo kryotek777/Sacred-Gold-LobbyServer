@@ -24,8 +24,9 @@ public record struct TincatHeader(uint Magic, uint Source, uint Destination, Tin
         stream.WriteUInt32(Checksum);
     }
 
-    public static void Deserialize(ref SpanReader reader, out TincatHeader result)
+    public static void Deserialize(ReadOnlySpan<byte> data, out TincatHeader result)
     {
+        var reader = new SpanReader(data);
         var Magic = reader.ReadUInt32();
         var Source = reader.ReadUInt32();
         var Destination = reader.ReadUInt32();

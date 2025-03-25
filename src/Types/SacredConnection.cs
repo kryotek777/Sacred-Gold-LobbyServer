@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using Lobby.Types;
 
 namespace Lobby.Networking;
@@ -44,7 +44,7 @@ public class SacredConnection
     private Task? WriteTask { get; set; }
     private CancellationTokenSource CancellationTokenSource { get; init; }
 
-    private BlockingCollection<(SacredMsgType type, byte[] data)> SendQueue { get; init; }
+    private Channel<SacredPacket> SendQueue { get; init; }
 
 
     /// <summary>
@@ -69,7 +69,7 @@ public class SacredConnection
         Socket = socket;
         ClientType = ClientType.Unknown;
         CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(parentToken);
-        SendQueue = new();
+        SendQueue = Channel.CreateUnbounded<SacredPacket>();
 
         Stream = new(socket);
         ReadTask = null;
@@ -79,11 +79,9 @@ public class SacredConnection
 
     public void Start()
     {
-        // Unfortunately Span<T> isn't usable in an async context yet
-        // This will run stuff synchronously in a separate thread for now
         var token = CancellationTokenSource.Token;
-        ReadTask = Utils.RunTask(ReadLoop, token);
-        WriteTask = Utils.RunTask(WriteLoop, token);
+        ReadTask = ReadLoop(token);
+        WriteTask = WriteLoop(token);
         Started = true;
     }
 
@@ -93,7 +91,7 @@ public class SacredConnection
         {
             Started = false;
             CancellationTokenSource.Cancel();
-            SendQueue.CompleteAdding();
+            SendQueue.Writer.Complete();
             Client.Stop();
         }
     }
@@ -102,8 +100,12 @@ public class SacredConnection
     {
         try
         {
-            if (!SendQueue.IsCompleted)
-                SendQueue.Add((type, data));
+            var written = SendQueue.Writer.TryWrite(new SacredPacket(Client, type, data));
+
+            if(!written && !CancellationTokenSource.Token.IsCancellationRequested && IsConnected)
+            {
+                Log.Error($"Failed to write to the send queue for client {Client.ClientName}");
+            }
         }
         catch (Exception ex)
         {
@@ -112,13 +114,13 @@ public class SacredConnection
         }
     }
 
-    private void ReadLoop(CancellationToken token)
+    private async Task ReadLoop(CancellationToken token)
     {
         try
         {
             while (!token.IsCancellationRequested && Socket.Connected)
             {
-                ReadPacket();
+                await ReadPacket(token);
             }
         }
         catch (OperationCanceledException)
@@ -140,14 +142,13 @@ public class SacredConnection
         }
     }
 
-    private void WriteLoop(CancellationToken token)
+    private async Task WriteLoop(CancellationToken token)
     {
         try
         {
-            while (!SendQueue.IsCompleted && Socket.Connected)
+            await foreach (var packet in SendQueue.Reader.ReadAllAsync(token))
             {
-                var (type, data) = SendQueue.Take(token);
-                SendSacredPacket(type, data);
+                SendSacredPacket(packet.Type, packet.Payload);
             }
         }
         catch (OperationCanceledException)
@@ -169,13 +170,12 @@ public class SacredConnection
         }
     }
 
-    private void ReadPacket()
+    private async Task ReadPacket(CancellationToken token)
     {
         // Read the TinCat header
-        Span<byte> headerData = stackalloc byte[TincatHeaderSize];
-        var reader = new SpanReader(headerData);
-        Stream.ReadExactly(headerData);
-        TincatHeader.Deserialize(ref reader, out var header);
+        var headerData = new byte[TincatHeaderSize];
+        await Stream.ReadExactlyAsync(headerData, token);
+        TincatHeader.Deserialize(headerData, out var header);
 
         // Not a TinCat header
         if (header.Magic != TincatMagic)
@@ -185,8 +185,8 @@ public class SacredConnection
         }
 
         // Read the payload
-        Span<byte> payloadData = stackalloc byte[header.Length];
-        Stream.ReadExactly(payloadData);
+        var payloadData = new byte[header.Length];
+        await Stream.ReadExactlyAsync(payloadData, token);
 
         // Check the payload's integrity
         var checksum = CRC32.Compute(payloadData);
@@ -282,8 +282,9 @@ public class SacredConnection
     }
 
 
-    private void OnCustomData(SpanReader reader)
+    private void OnCustomData(ReadOnlySpan<byte> data)
     {
+        var reader = new SpanReader(data);
         var moduleId = reader.ReadUInt16();
         var type = (SacredMsgType)reader.ReadInt16();
         var securityHeader = PacketSecurityHeader.Deserialize(ref reader);

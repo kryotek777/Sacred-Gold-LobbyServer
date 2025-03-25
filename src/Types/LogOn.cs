@@ -13,8 +13,9 @@ public record LogOn(
 
     public LogOn(uint connId) : this(LogOnMagic, connId, "user", "-", 0) { }
 
-    public static LogOn Deserialize(SpanReader reader)
+    public static LogOn Deserialize(ReadOnlySpan<byte> data)
     {
+        var reader = new SpanReader(data);
         var Magic = reader.ReadUInt32();
         var ConnectionId = reader.ReadUInt32();
         var Username = Utils.Win1252ToString(reader.ReadBytes(32));
