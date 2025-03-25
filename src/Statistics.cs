@@ -12,7 +12,6 @@ public static class Statistics
     public static ulong PacketsReceived => _packetsReceived;
     public static ulong PacketsSent => _packetsSent;
     public static TimeSpan Runtime => _stopwatch.Elapsed;
-    public static TimeSpan AveragePacketWaitTime => _averagePacketWaitTime;
     public static TimeSpan AveragePacketProcessingTime => _averagePacketProcessingTime;
 
     private const int maxPacketTimeSamples = 100;
@@ -23,10 +22,7 @@ public static class Statistics
     private static ulong _packetsSent = 0;
     private static Stopwatch _stopwatch = new();
     private static ConcurrentQueue<TimeSpan> _processingTimes = new();
-    private static ConcurrentQueue<TimeSpan> _waitTimes = new();
-    private static TimeSpan _packetWaitStart = TimeSpan.Zero;
     private static TimeSpan _packetProcessingStart = TimeSpan.Zero;
-    private static TimeSpan _averagePacketWaitTime = TimeSpan.Zero;
     private static TimeSpan _averagePacketProcessingTime = TimeSpan.Zero;
     
     public static void Initialize()
@@ -66,36 +62,6 @@ public static class Statistics
         if (_enabled)
         {
             Interlocked.Increment(ref _packetsSent);
-        }
-    }
-
-    public static void StartWaitingForPacket()
-    {
-        if (_enabled)
-        {
-            _packetWaitStart = _stopwatch.Elapsed;
-        }
-    }
-
-    public static void EndWaitingForPacket()
-    {
-        if (_enabled)
-        {
-            var waitTime = _stopwatch.Elapsed - _packetWaitStart;
-            _waitTimes.Enqueue(waitTime);
-
-            if (_waitTimes.Count > maxPacketTimeSamples)
-            {
-                _waitTimes.TryDequeue(out _);
-            }
-
-            var sum = TimeSpan.Zero;
-            foreach (var sample in _waitTimes)
-            {
-                sum += sample;
-            }
-
-            _averagePacketWaitTime = sum / _waitTimes.Count;
         }
     }
 

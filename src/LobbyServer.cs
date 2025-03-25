@@ -244,12 +244,9 @@ internal static partial class LobbyServer
 
                     try
                     {
-                        Statistics.StartWaitingForPacket();
                         var packet = await reader.ReadAsync(token);
-                        Statistics.EndWaitingForPacket();
-
                         Statistics.StartProcessingPacket();
-                        packet.Deconstruct(out sender, out var type, out var payload);
+                        packet.Deconstruct(out sender, out _, out _);
                         ProcessPacket(packet);
                         Statistics.EndProcessingPacket();
                     }

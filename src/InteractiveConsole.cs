@@ -88,7 +88,6 @@ public static class InteractiveConsole
 
                 table.AddRow("Servers", Lobby.Statistics.Servers.ToString());
                 table.AddRow("Users", Lobby.Statistics.Users.ToString());
-                table.AddRow("Avg. Packet Wait Time", $"{Lobby.Statistics.AveragePacketWaitTime.TotalMilliseconds:F2}ms");
                 table.AddRow("Avg. Packet Processing Time", $"{Lobby.Statistics.AveragePacketProcessingTime.TotalMilliseconds:F2}ms");
                 table.AddRow("Bytes received", FormatBytes(Lobby.Statistics.BytesReceived));
                 table.AddRow("Bytes sent", FormatBytes(Lobby.Statistics.BytesSent));
