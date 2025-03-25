@@ -25,8 +25,8 @@ public class Config
     public string TemplatePath { get; set; }
     public bool AllowAnonymousLogin { get; set;}
     public List<ChannelInfo> Channels { get; set; }
-
     public bool SkipSecurityChecks { get; set; }
+    public bool CollectStatistics { get; set;} 
 
     public Config()
     {

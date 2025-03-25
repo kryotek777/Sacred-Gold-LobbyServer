@@ -1,8 +1,6 @@
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.Numerics;
 using Lobby.Networking;
-using Lobby.Types;
-using Lobby.Types.Messages;
 using Spectre.Console;
 
 namespace Lobby;
@@ -10,14 +8,19 @@ namespace Lobby;
 public static class InteractiveConsole
 {
     private static readonly Command _exitCommand = new Command(null!, "Exit the interactive console");
-    private static readonly Command[] _commands =
-    [
-        new(List, "List all players and servers"),
-        new(Kick, "Kick a client"),
-        new(Stop, "Stop and shutdown the lobby"),
-        new(Chat, "Send a message"),
-        _exitCommand,
-    ];
+    private static List<Command> _commands = new();
+
+    public static void Initialize()
+    {
+        if(Config.Instance.CollectStatistics)
+            _commands.Add(new(Statistics, "Show statistics"));
+
+        _commands.Add(new(List, "List all players and servers"));
+        _commands.Add(new(Kick, "Kick a client"));
+        _commands.Add(new(Stop, "Stop and shutdown the lobby"));
+        _commands.Add(new(Chat, "Send a message"));
+        _commands.Add(_exitCommand);
+    }
 
     public static void Run(CancellationToken cancToken)
     {
@@ -47,19 +50,19 @@ public static class InteractiveConsole
                         {
                             command.Action();
                         }
-                    }                
+                    }
                 });
             }
-            catch(NotSupportedException ex)
+            catch (NotSupportedException ex)
             {
-                Log.Error($"The interactive console is not supported by your system: {ex.Message}"); 
+                Log.Error($"The interactive console is not supported by your system: {ex.Message}");
                 break;
             }
-            catch(TaskCanceledException)
+            catch (TaskCanceledException)
             {
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 AnsiConsole.WriteException(ex);
             }
@@ -67,6 +70,50 @@ public static class InteractiveConsole
             {
                 Log.ResumeConsoleOutput();
             }
+        }
+    }
+
+    private static void Statistics()
+    {
+        var table = new Table();
+
+        AnsiConsole.Live(table)
+        .AutoClear(true)
+        .Start(ctx =>
+        {
+            while (!Console.KeyAvailable)
+            {
+                table.AddColumn("Name");
+                table.AddColumn("Value");
+
+                table.AddRow("Servers", Lobby.Statistics.Servers.ToString());
+                table.AddRow("Users", Lobby.Statistics.Users.ToString());
+                table.AddRow("Avg. Packet Wait Time", $"{Lobby.Statistics.AveragePacketWaitTime.TotalMilliseconds:F2}ms");
+                table.AddRow("Avg. Packet Processing Time", $"{Lobby.Statistics.AveragePacketProcessingTime.TotalMilliseconds:F2}ms");
+                table.AddRow("Bytes received", FormatBytes(Lobby.Statistics.BytesReceived));
+                table.AddRow("Bytes sent", FormatBytes(Lobby.Statistics.BytesSent));
+                table.AddRow("Packets received", Lobby.Statistics.PacketsReceived.ToString());
+                table.AddRow("Packets sent", Lobby.Statistics.PacketsSent.ToString());
+                table.AddRow("Runtime", Lobby.Statistics.Runtime.ToString(@"hh\:mm\:ss"));
+
+                ctx.Refresh();
+
+                Thread.Sleep(500);
+
+                table = new Table();
+
+                ctx.UpdateTarget(table);
+            }
+        });
+
+        static string FormatBytes(ulong count)
+        {
+            string[] suffixes = { "B", "KiB", "MiB", "GiB" };
+
+            var index = BitOperations.Log2(count) / 10;
+            var divisor = 1u << (10 * index);
+
+            return $"{(double)count / divisor:F2} {suffixes[index]} ({count})";
         }
     }
 

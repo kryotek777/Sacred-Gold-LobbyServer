@@ -66,6 +66,9 @@ AllowAnonymousLogin = true
 # Useful with misbehaving mods
 SkipSecurityChecks = false
 
+# Collect performance statistics
+CollectStatistics = true
+
 # The following is the channel list that's visible in closednet
 # WARNING: Ensure there's always a channel with ID=6 with no flags, that's dedicated for OpenNet and hardcoded in the game!
 

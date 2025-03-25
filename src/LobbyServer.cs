@@ -28,6 +28,8 @@ internal static partial class LobbyServer
     {
         LoadConfig();
         Database.Load();
+        Statistics.Initialize();
+        InteractiveConsole.Initialize();
 
         List<Task> tasks =
         [
@@ -242,9 +244,14 @@ internal static partial class LobbyServer
 
                     try
                     {
+                        Statistics.StartWaitingForPacket();
                         var packet = await reader.ReadAsync(token);
+                        Statistics.EndWaitingForPacket();
+
+                        Statistics.StartProcessingPacket();
                         packet.Deconstruct(out sender, out var type, out var payload);
                         ProcessPacket(packet);
+                        Statistics.EndProcessingPacket();
                     }
                     catch (OperationCanceledException)
                     {

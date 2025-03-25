@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
@@ -121,6 +122,7 @@ public class SacredConnection
             while (!token.IsCancellationRequested && Socket.Connected)
             {
                 await ReadPacket(token);
+                Statistics.IncrementPacketsReceived();
             }
         }
         catch (OperationCanceledException)
@@ -149,6 +151,7 @@ public class SacredConnection
             await foreach (var packet in SendQueue.Reader.ReadAllAsync(token))
             {
                 SendSacredPacket(packet.Type, packet.Payload);
+                Statistics.IncrementPacketsSent();
             }
         }
         catch (OperationCanceledException)
@@ -173,8 +176,7 @@ public class SacredConnection
     private async Task ReadPacket(CancellationToken token)
     {
         // Read the TinCat header
-        var headerData = new byte[TincatHeaderSize];
-        await Stream.ReadExactlyAsync(headerData, token);
+        var headerData = await Read(TincatHeaderSize, token);
         TincatHeader.Deserialize(headerData, out var header);
 
         // Not a TinCat header
@@ -185,8 +187,7 @@ public class SacredConnection
         }
 
         // Read the payload
-        var payloadData = new byte[header.Length];
-        await Stream.ReadExactlyAsync(payloadData, token);
+        var payloadData = await Read(header.Length, token);
 
         // Check the payload's integrity
         var checksum = CRC32.Compute(payloadData);
@@ -222,7 +223,21 @@ public class SacredConnection
                 }
         }
 
-        return;
+    }
+    
+    private async ValueTask<byte[]> Read(int length, CancellationToken token)
+    {
+        Debug.Assert(length > 0);
+        var buffer = new byte[length];
+        await Stream.ReadExactlyAsync(buffer, token);
+        Statistics.AddBytesReceived((ulong)buffer.Length);
+        return buffer;
+    }
+
+    private void Write(ReadOnlySpan<byte> data)
+    {
+        Stream.Write(data);
+        Statistics.AddBytesSent((ulong)data.Length);
     }
 
     private void SendTincatPacket(TincatMsgType type, ReadOnlySpan<byte> data)
@@ -237,8 +252,12 @@ public class SacredConnection
             Checksum: CRC32.Compute(data)
         );
 
-        header.Serialize(Stream);
-        Stream.Write(data);
+        var headerData = new byte[TincatHeaderSize];
+        var writer = new SpanWriter(headerData);
+        header.Serialize(ref writer);
+
+        Write(headerData);
+        Write(data);
     }
 
     private void SendSacredPacket(SacredMsgType type, byte[] data)
