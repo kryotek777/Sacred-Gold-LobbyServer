@@ -768,7 +768,7 @@ internal static partial class LobbyServer
         if (sender.IsInChannel)
             flags &= ~ServerFlags.Locked;
 
-        sender.ServerInfo = sender.ServerInfo ?? newInfo with
+        sender.ServerInfo = (sender.ServerInfo ?? newInfo) with
         {
             Flags = flags,
             MaxPlayers = newInfo.MaxPlayers,
