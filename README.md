@@ -1,99 +1,149 @@
 # Sacred Gold Lobby Server
 
-This project is a reimplementation of the lobby servers once used in the game "Sacred" developed by Ascaron Entertainment.
+This project is a reimplementation of the original lobby servers once used in the game "Sacred," developed by Ascaron Entertainment. The lobby servers maintained lists of official and community-run game servers, allowing clients to discover and connect to available game rooms. This reimplementation aims to bring back that functionality, letting players find and join active servers for multiplayer gameplay.
+
+> [!NOTE]
+> Sacred has an **anti-flood system** that delays messages if you send more than one every two seconds. After you exceed this rate, new messages get cached until the timer resets, and then they all get sent at once. So, **type slowly** in the lobby chat to avoid getting flood-blocked!
+
+---
 
 ## Overview
 
-The lobby servers were responsible for maintaining lists of both official and community-run game servers, allowing clients to discover and connect to available game rooms.
+- **OpenNet**: Use your local characters to play online.  
+- **ClosedNet**: Have your characters stored on the lobby, preventing edited or cheated saves for fair play. *(Currently, only the public instance has ClosedNet servers; self-hosted ClosedNet is not yet available.)*  
+- **Server List**: GameServers can register themselves with the lobby, making them visible to players.  
+- **Lobby Chat**: Chat with other players, see characters in the lobby, and coordinate games.  
+- **Accounts**: Originally, registration happened on Ascaron's website; now, the lobby handles it all.  
+- **Hardcore Mode**: ClosedNet also supports hardcore characters—die once, lose your character forever!
 
-This reimplementation aims to recreate the functionality of the original lobby servers, providing a platform for players to discover and connect to active game servers for multiplayer gameplay.
+---
 
-> [!CAUTION]
-> Write slow in the lobby's chat! The game has an anti-flood system that prevents messages from being sent to the lobby
-> If you write more than a message every two seconds, every subsequent message gets cached until the flood timer resets
-> Then when writing a new message, all cached messages get sent
+## Quick Start: "I Just Want to Play!"
 
-## Features
+1. **Close the game** if it's already open.  
+2. **Open your Sacred installation folder** and locate the file `Settings.cfg`.  
+3. **Modify** the following lines (using a text editor like Notepad):
 
-### Implemented
-- **Accounts**: The servers once required registration on the ascaron website, now the lobby handles everything!
-- **Open Net**: This gamemode allows you to use your local characters to play online!
-- **Closed Net**: In this competitive gamemode the lobbyserver stores your characters so you can't load cheated ones.
-- **Server List**: GameServers can connect to the lobbyserver and be added to the list of available servers
-- **Lobby Chat**: You can now chat with other players and see other characters in the lobby
+    ```ini
+    NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC
+    NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9
+    NETWORK_LOBBY : 94.16.105.70
+    NETWORK_LOBBYPORT : 7066
+    NETWORK_SPEEDSETTINGS : 1
+    ```
 
-## Getting Started
+4. **Save** the file.
+5. **To play OpenNet**:
+   - Open Sacred
+   - Go to **Multiplayer** → **Open Internet**,
+   - (Optionally) **Register** or else **Choose any username, any password and any email** (the password and email aren't needed and will be ignored)
+   - **Log On**
+7. **To play ClosedNet**:
+   - Download the [ClosedNet client](https://kryotek.net/sacred/assets/bin/SacredClosedNet.exe)
+   - Place it in your Sacred installation folder and launch it
+   - Go **Multiplayer** → **Closed Internet**
+   - **Register** (email not needed)
+   - **Log On**
+8. Select your character, and you’ll see the **server list**. Jump in and play!
 
-### Download the LobbyServer
-1. Download the latest release from the box on the right
-2. Extract the archive
-3. (Optionally) modify 'config.toml' to suit your needs
+*(If you want to learn more about OpenNet vs. ClosedNet, see the [FAQ](#faq) below.)*
 
-### Port forwarding
-The port 7066/tcp (unless modified in the config) needs to be port forwarded if hosting a lobbyserver over the internet
+---
 
-Now when you run the executable GameServers and Clients will be able to connect to the lobbyserver!
+## Self-Hosting Your Own Lobby
 
-### GameServer configuration
-This needs to be done for every person that wants to host a game using GameServer.exe!
+If you want full control over the lobby and game servers:
 
-Open the file GameServer.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:  
+1. **Download the LobbyServer** from the [GitHub Releases](https://github.com/kryotek777/Sacred-Gold-LobbyServer/releases).
+2. Extract the archive and optionally edit `config.toml` to suit your needs (port, welcome messages, etc.).
+3. **Port Forward** `7066/tcp` (or whatever port you set in `config.toml`) for your lobby to be accessible over the internet.
+4. **Run** the lobby server executable.
 
-`NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.toml)
+### GameServer Configuration
 
-Ports 2005/udp and 2006/tcp need to be port forwarded if hosting a gameserver over the internet
+1. Open `GameServer.cfg` in your Sacred folder and edit:
 
-Now open GameServer.exe, set a game name, click on the radio button labeled "Internet" and then click "Ok"  
-The gameserver should now connect to the lobbyserver!
+    ```ini
+    NETWORK_LOBBY : <your public IP or 127.0.0.1 if on the same machine as the lobby>
+    NETWORK_LOBBYPORT : 7066
+    ```
 
-### Client configuration
+2. **Port Forward**`2006/tcp` for the GameServer if you’re hosting over the internet.
+3. Run `GameServer.exe`, set a **game name**, choose **Internet**, then **OK**.
+4. The GameServer will now register itself with the lobby.
 
-Open the file Settings.cfg in Sacred's game folder with a text editor (such as notepad) and modify the following lines:
+### Client Configuration
 
-`NETWORK_LOBBY : <your public ip or 127.0.0.1 if on the same pc as the lobbyserver>`<br>
-`NETWORK_LOBBYPORT : 7066` (or your custom port you set in config.toml)  
-`NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC`<br>
-`NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9`
+Clients need to modify their own `Settings.cfg`:
 
-You can also write the CD Keys from the in-game UI
+```ini
+NETWORK_LOBBY : <your public IP or 127.0.0.1 if on the same PC>
+NETWORK_LOBBYPORT : 7066
+NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC
+NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9
+```
 
-Now open Sacred, click on "Multiplayer" then "Open Internet", choose a random username and password, then click "Log On".
-After selecting a character you should automatically connect to a room and see the server list!
+Then they can connect via **Multiplayer** → **Open Internet**, picking any username/password.  
+
+---
+
+## FAQ <a id="faq"></a>
+
+### What Are the Different Game Modes?
+
+- **OpenNet**: Play online with your own local characters. You can edit them on your PC, so it’s more casual.  
+- **ClosedNet**: Characters are stored on the lobby. This prevents cheating and ensures a fair, competitive environment.  
+
+### How Do I Play in ClosedNet?
+
+Currently, **ClosedNet** requires registration (the email field is ignored) and is only available on the **public instance** of the lobby. You **cannot self-host ClosedNet** yet. To play ClosedNet:
+
+1. Download the [ClosedNet client](https://kryotek.net/sacred/assets/bin/SacredClosedNet.exe).  
+2. Place `SacredClosedNet.exe` in your Sacred folder.  
+3. Modify your `Settings.cfg` like in the Quick Start section.  
+4. Run the **ClosedNet client**, register or log in with your credentials.  
+5. Enjoy fair play without the worry of cheated characters!
+
+### Is There a Discord for Support?
+
+Yes! Join us on the [Sacred International Discord](https://discord.gg/Duu4B8tgjv) for help, to meet other players, and to share tips and experiences.
+
+---
 
 ## Building
 
-To get started with this reimplementation, follow these steps:
+To get started with this reimplementation:
 
-1. **Clone the Repository**: Clone this repository to your local machine using Git:
+1. **Clone the Repository**  
+   ```bash
+   git clone https://github.com/kryotek777/Sacred-Gold-LobbyServer.git
+   ```
+2. **Build the Project**  
+   ```bash
+   dotnet build
+   ```
+3. **Run the Lobby Server**  
+   ```bash
+   dotnet run
+   ```
 
-    ```bash
-    git clone https://github.com/yourusername/sacred-lobby-server.git
-    ```
-
-2. **Build the Project**: Using Visual Studio or the .NET CLI, build the lobby server project:
-
-    ```bash
-    dotnet build
-    ```
-
-3. **Run the Lobby Server**: Using the dotnet CLI run:
-
-    ```bash
-    dotnet run
-    ```
+---
 
 ## Contributing
 
-Contributions to this project are welcome! If you'd like to contribute, please fork the repository, make your changes, and submit a pull request.
+Contributions are welcome! If you’d like to help out, please fork the repository, make your changes, and submit a pull request.
+
+You can directly support the project using [GitHub sponsors](https://github.com/sponsors/kryotek777) or [PayPal](https://paypal.me/kryotek777)
+
+---
 
 ## License
 
 This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## Acknowledgements
 
-Special thanks to Ascaron Entertainment for creating Sacred and inspiring this reimplementation!
-
-A really heartfelt thank you to the members of Sacred Tribute for their invaluable help and to all the members of the discord communities that helped testing, debugging and experimenting <3
-
+Special thanks to Ascaron Entertainment for creating Sacred and inspiring this reimplementation.  
+Huge thanks to **Sacred Tribute**, the **Discord communities**, and all testers who helped with debugging and experimenting. Your support is invaluable! 
