@@ -22,6 +22,9 @@ public static partial class WebApi
             // Prevent default ASP.NET Core logging from clogging the console
             builder.Logging.ClearProviders();
 
+            // Allow other origins to use these endpoints
+            builder.Services.AddCors();
+
             // Default to enum string serialization
             builder.Services.ConfigureHttpJsonOptions(options =>
             {
@@ -56,6 +59,13 @@ public static partial class WebApi
                     configure.DocumentTitle = "LobbyServer Swagger";
                 });
             }
+
+            // Allow other origins to use these endpoints
+            webApp.UseCors(builder => builder
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowAnyOrigin()
+            );
 
             // ---[ Generic ]---
             webApp.MapGet("/health", Healthcheck).WithTags("Generic");
