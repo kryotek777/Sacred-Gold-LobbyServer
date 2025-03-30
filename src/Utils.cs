@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,6 +11,7 @@ internal static class Utils
 {
     public static readonly Encoding Windows1252Encoding;
     public static readonly IPAddress ExternalIp; 
+    public static readonly string AppVersion;
     private const string EncryptionKey = "Sacred";
 
     static Utils()
@@ -19,6 +21,8 @@ internal static class Utils
         Windows1252Encoding = Encoding.GetEncoding(1252);
 
         ExternalIp = GetExternalIp();
+
+        AppVersion = GetVersion();
     }
 
     public static Task RunTask(Action<CancellationToken> action, CancellationToken token)
@@ -65,6 +69,11 @@ internal static class Utils
         var str = cl.GetStringAsync("http://ipv4.icanhazip.com").Result;
         var ip = IPAddress.Parse(str.AsSpan().Trim('\n'));
         return ip;
+    }
+
+    private static string GetVersion()
+    {
+        return Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
     }
 
     public static bool IsInternal(this IPAddress ip)
