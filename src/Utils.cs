@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
 using System.Net;
 using System.Reflection;
@@ -182,4 +183,7 @@ internal static class Utils
             }
         }
     }
+
+    public static string ToISO8601(this DateTime date) => date.ToString("s", CultureInfo.InvariantCulture);
+    public static DateTime FromISO8601(string date) => DateTime.ParseExact(date, "s", CultureInfo.InvariantCulture);
 }

@@ -18,6 +18,7 @@ public class Account
     public string Text { get; set; }
     public string Email { get; set; }
     public bool ShowEmail { get; set; }
+    public DateTime CreationDate { get; set; }
 
     public Account(
         int PermId,
@@ -31,7 +32,8 @@ public class Account
         string Icq,
         string Text,
         string Email,
-        bool ShowEmail
+        bool ShowEmail,
+        DateTime CreationDate
     )
     {
         this.PermId = PermId;
@@ -46,8 +48,8 @@ public class Account
         this.Text = Text;
         this.Email = Email;
         this.ShowEmail = ShowEmail;
+        this.CreationDate = CreationDate;
     }
-
 
     // Silence "Non nullable field must be non null"
     // We're setting the fields with helper functions
@@ -57,6 +59,7 @@ public class Account
         this.PermId = PermId;
         SetPasswordAndSalt(password);
         SetProfileData(ProfileData.CreateEmpty(PermId) with { Account = username });
+        CreationDate = DateTime.UtcNow;
     }
 #pragma warning restore CS8618
 

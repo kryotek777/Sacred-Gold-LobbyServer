@@ -31,6 +31,7 @@ public static class Database
             connection.Open();
 
             CreateTables();
+            UpgradeDB();
         }
         finally
         {
@@ -85,8 +86,8 @@ public static class Database
         {
             string insertQuery = @"
                     INSERT INTO Accounts 
-                    (PermId, Username, Password, Salt, Name, Nick, Clan, Page, Icq, Text, Email, ShowEmail) 
-                    VALUES (@PermId, @Username, @Password, @Salt, @Name, @Nick, @Clan, @Page, @Icq, @Text, @Email, @ShowEmail)";
+                    (PermId, Username, Password, Salt, Name, Nick, Clan, Page, Icq, Text, Email, ShowEmail, CreationDate) 
+                    VALUES (@PermId, @Username, @Password, @Salt, @Name, @Nick, @Clan, @Page, @Icq, @Text, @Email, @ShowEmail, @CreationDate)";
 
             using var command = new SQLiteCommand(insertQuery, connection);
             command.Parameters.AddWithValue("@PermId", account.PermId);
@@ -101,6 +102,7 @@ public static class Database
             command.Parameters.AddWithValue("@Text", account.Text);
             command.Parameters.AddWithValue("@Email", account.Email);
             command.Parameters.AddWithValue("@ShowEmail", account.ShowEmail ? 1 : 0);
+            command.Parameters.AddWithValue("@CreationDate", account.CreationDate.ToISO8601());
 
             command.ExecuteNonQuery();
         }
@@ -329,7 +331,8 @@ public static class Database
                         Icq TEXT,
                         Text TEXT,
                         Email TEXT,
-                        ShowEmail INTEGER NOT NULL
+                        ShowEmail INTEGER NOT NULL,
+                        CreationDate TEXT
                     );";
 
         // Execute the query
@@ -338,20 +341,55 @@ public static class Database
         command.ExecuteNonQuery(System.Data.CommandBehavior.KeyInfo);
     }
 
+    private static void UpgradeDB()
+    {
+        string checkColumnQuery = @"
+            PRAGMA table_info(Accounts);
+        ";
+
+        using var checkCommand = new SQLiteCommand(checkColumnQuery, connection);
+        using var reader = checkCommand.ExecuteReader();
+
+        bool columnExists = false;
+
+        while (reader.Read())
+        {
+            if (reader.GetWithName<string>("name") == "CreationDate")
+            {
+                columnExists = true;
+                break;
+            }
+        }
+
+        if (!columnExists)
+        {
+            string addColumnQuery = @"
+                ALTER TABLE Accounts ADD COLUMN CreationDate TEXT;
+            ";
+
+            using var addColumnCommand = new SQLiteCommand(addColumnQuery, connection);
+            addColumnCommand.ExecuteNonQuery();
+        }
+    }
+
     private static Account ReadAccount(SQLiteDataReader reader)
     {
-        int PermId = (int)reader.GetWithName<long>("PermId");
-        string Username = reader.GetWithName<string>("Username");
-        byte[] Password = reader.GetBlobValue("Password");
-        byte[] Salt = reader.GetBlobValue("Salt");
-        string Name = reader.GetWithName<string>("Name");
-        string Nick = reader.GetWithName<string>("Nick");
-        string Clan = reader.GetWithName<string>("Clan");
-        string Page = reader.GetWithName<string>("Page");
-        string Icq = reader.GetWithName<string>("Icq");
-        string Text = reader.GetWithName<string>("Text");
-        string Email = reader.GetWithName<string>("Email");
-        bool ShowEmail = reader.GetWithName<bool>("ShowEmail");
+        var PermId = (int)reader.GetWithName<long>("PermId");
+        var Username = reader.GetWithName<string>("Username");
+        var Password = reader.GetBlobValue("Password");
+        var Salt = reader.GetBlobValue("Salt");
+        var Name = reader.GetWithName<string>("Name");
+        var Nick = reader.GetWithName<string>("Nick");
+        var Clan = reader.GetWithName<string>("Clan");
+        var Page = reader.GetWithName<string>("Page");
+        var Icq = reader.GetWithName<string>("Icq");
+        var Text = reader.GetWithName<string>("Text");
+        var Email = reader.GetWithName<string>("Email");
+        var ShowEmail = reader.GetWithName<bool>("ShowEmail");
+
+        //CreationDate may be null for accounts created before v3.2.0
+        bool hasCreationDate = reader.TryGetWithName<string?>("CreationDate", out var creationStr);
+        DateTime CreationDate = hasCreationDate ? Utils.FromISO8601(creationStr!) : DateTime.MinValue;
 
         var account = new Account(
             PermId,
@@ -365,7 +403,8 @@ public static class Database
             Icq,
             Text,
             Email,
-            ShowEmail
+            ShowEmail,
+            CreationDate
         );
 
         return account;
