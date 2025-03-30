@@ -169,6 +169,75 @@ public static class Database
         }
     }
 
+    public static List<Account> SearchAccounts(string name)
+    {
+        rwLock.EnterReadLock();
+        try
+        {
+            var accounts = new List<Account>();
+            var query = "SELECT * FROM Accounts WHERE Username LIKE @Username || '%'";
+
+            using var command = new SQLiteCommand(query, connection);
+            command.Parameters.AddWithValue("@Username", name);
+
+            using var reader = command.ExecuteReader(System.Data.CommandBehavior.KeyInfo);
+            while (reader.Read())
+            {
+                var account = ReadAccount(reader);
+                accounts.Add(account);
+            }
+
+            return accounts;
+        }
+        finally
+        {
+            rwLock.ExitReadLock();
+        }
+    }
+
+    public static List<int> GetAllAccountIds()
+    {
+        rwLock.EnterReadLock();
+        try
+        {
+            var ids = new List<int>();
+            var query = "SELECT PermId FROM Accounts";
+
+            using var command = new SQLiteCommand(query, connection);
+            using var reader = command.ExecuteReader(System.Data.CommandBehavior.KeyInfo);
+
+            while (reader.Read())
+            {
+                var id = (int)reader.GetWithName<long>("PermId");
+                ids.Add(id);
+            }
+
+            return ids;
+        }
+        finally
+        {
+            rwLock.ExitReadLock();
+        }
+    }
+
+    public static int GetRegisteredUsers()
+    {
+        rwLock.EnterReadLock();
+        try
+        {
+            var query = "SELECT COUNT(*) FROM Accounts";
+
+            using var command = new SQLiteCommand(query, connection);
+            var result = command.ExecuteScalar();
+
+            return result != DBNull.Value ? Convert.ToInt32(result) : 0;
+        }
+        finally
+        {
+            rwLock.ExitReadLock();
+        }
+    }
+
     public static bool TryLogin(string username, string password, [NotNullWhen(true)] out Account? account)
     {
         rwLock.EnterReadLock();

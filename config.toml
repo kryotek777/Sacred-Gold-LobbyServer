@@ -69,6 +69,18 @@ SkipSecurityChecks = false
 # Collect performance statistics
 CollectStatistics = true
 
+# Enable the WebApi server
+# WARNING: This is not intended to be public, DO NOT EXPOSE THE WEBAPI PORT TO THE INTERNET!
+# it is meant for local control panels or website backends ONLY
+EnableWebApi = false
+
+# Enable the Swagger UI for the WebApi server
+# This contains all the endpoints present in the server, you can find it at /swagger
+EnableSwagger = false
+
+# The URL on which the WebApi server will listen
+WebApiUrl = "http://localhost:5000"
+
 # The following is the channel list that's visible in closednet
 # WARNING: Ensure there's always a channel with ID=6 with no flags, that's dedicated for OpenNet and hardcoded in the game!
 

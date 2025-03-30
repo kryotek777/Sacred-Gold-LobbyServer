@@ -26,7 +26,10 @@ public class Config
     public bool AllowAnonymousLogin { get; set;}
     public List<ChannelInfo> Channels { get; set; }
     public bool SkipSecurityChecks { get; set; }
-    public bool CollectStatistics { get; set;} 
+    public bool CollectStatistics { get; set; } 
+    public bool EnableWebApi { get; set; }
+    public bool EnableSwagger { get; set; }
+    public string WebApiUrl { get; set; } 
 
     public Config()
     {
@@ -45,6 +48,10 @@ public class Config
         SavesPath = "";
         TemplatePath = "";
         Channels = new();
+        SkipSecurityChecks = false;
+        EnableWebApi = false;
+        EnableSwagger = false;
+        WebApiUrl = "";
     }
 
     public static bool Load([NotNullWhen(false)] out string? error)

@@ -3,14 +3,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading.Channels;
+using Lobby.Api;
 using Lobby.DB;
 using Lobby.Networking;
 using Lobby.Types;
 using Lobby.Types.Messages;
 using Lobby.Types.Messages.Data;
+
 namespace Lobby;
 
-internal static partial class LobbyServer
+internal static class LobbyServer
 {
     private static readonly List<ServerInfoMessage> separators = new();
     private static readonly CancellationTokenSource cancellationTokenSource = new();
@@ -37,6 +39,11 @@ internal static partial class LobbyServer
             ProcessLoopAsync(cancellationTokenSource.Token),
             Utils.RunTask(InteractiveConsole.Run, cancellationTokenSource.Token),
         ];
+
+        if(Config.Instance.EnableWebApi)
+        {
+            tasks.Add(WebApi.Run(Config.Instance.WebApiUrl, cancellationTokenSource.Token));
+        }
 
         return Task.WhenAll(tasks);
     }
