@@ -16,9 +16,9 @@ public record CharacterPreview(
     byte InventoryItemsCount,
     uint Experience,
     uint Gold,
-    byte CreationYear,
-    byte CreationMonth,
-    byte CreationDay,
+    byte SaveYear,
+    byte SaveMonth,
+    byte SaveDay,
     byte[] Effects
 ) : ISerializable<CharacterPreview>
 {
@@ -47,9 +47,9 @@ public record CharacterPreview(
         var InventoryItemsCount = reader.ReadByte();
         var Experience = reader.ReadUInt32();
         var Gold = reader.ReadUInt32();
-        var CreationDay = reader.ReadByte();
-        var CreationYear = reader.ReadByte();
-        var CreationMonth = reader.ReadByte();
+        var SaveYear = reader.ReadByte();
+        var SaveMonth = reader.ReadByte();
+        var SaveDay = reader.ReadByte();
         reader.ReadBytes(5);    // Reserved
 
         var Effects = reader.ReadBytes(12 * 24).ToArray();
@@ -67,9 +67,9 @@ public record CharacterPreview(
             InventoryItemsCount,
             Experience,
             Gold,
-            CreationYear,
-            CreationMonth,
-            CreationDay,
+            SaveYear,
+            SaveMonth,
+            SaveDay,
             Effects
         );
     }
@@ -97,9 +97,9 @@ public record CharacterPreview(
         stream.Write(InventoryItemsCount);
         stream.Write(Experience);
         stream.Write(Gold);
-        stream.Write(CreationDay);
-        stream.Write(CreationYear);
-        stream.Write(CreationMonth);
+        stream.Write(SaveYear);
+        stream.Write(SaveMonth);
+        stream.Write(SaveDay);
         stream.Position += 5;
         stream.Write(Effects);
 
