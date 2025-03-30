@@ -618,9 +618,7 @@ internal static partial class LobbyServer
                 return (LobbyResults.Ok, null);
             }
 
-            var saveData = Database.GetSaveFile(request.PermId, request.BlockId);
-
-            if (saveData != null)
+            if (Database.TryGetSaveFile(request.PermId, request.BlockId, out var saveData))
             {
                 // We should send the whole savegame too
                 if (sender.IsServer)
@@ -668,9 +666,7 @@ internal static partial class LobbyServer
                     if (string.IsNullOrEmpty(name))
                         continue;
 
-                    var saveFile = Database.GetSaveFile(data.PermId, i);
-
-                    if (saveFile == null)
+                    if (!Database.TryGetSaveFile(data.PermId, i, out var saveFile))
                         continue;
 
                     var preview = saveFile.GetCharacterPreview();

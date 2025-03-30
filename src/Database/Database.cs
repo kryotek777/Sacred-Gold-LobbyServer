@@ -224,11 +224,13 @@ public static class Database
         }
     }
 
-
-    public static SaveFile? GetSaveFile(int permId, int blockId)
+    public static bool TryGetSaveFile(int permId, int blockId, [NotNullWhen(true)] out SaveFile? saveFile)
     {
         if (!Config.Instance.StorePersistentData)
-            return null;
+        {
+            saveFile = null;
+            return false;
+        }
 
         rwLock.EnterReadLock();
         try
@@ -236,9 +238,13 @@ public static class Database
             var path = Path.Combine(Config.Instance.SavesPath, permId.ToString(), $"Hero{blockId - 1:D2}.pax");
 
             if (!Path.Exists(path))
-                return null;
+            {
+                saveFile = null;
+                return false;
+            }
 
-            return new SaveFile(path);
+            saveFile = new SaveFile(path);
+            return true;
         }
         finally
         {

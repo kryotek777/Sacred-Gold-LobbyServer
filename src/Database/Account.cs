@@ -93,9 +93,10 @@ public class Account
 
         for (int i = 0; i < 8; i++)
         {
+            if(!Database.TryGetSaveFile(PermId, i + 1, out var save))
+                continue;
 
-            var save = Database.GetSaveFile(PermId, i + 1);
-            var name = save?.GetCharacterPreview().Name;
+            var name = save.GetCharacterPreview().Name;
 
             if (name != null)
             {
