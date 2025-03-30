@@ -1,11 +1,10 @@
 using System.Diagnostics;
-using Lobby.Types;
 
 namespace Lobby.Types;
 
 public record CharacterPreview(
     uint Level,
-    uint Type,
+    CharacterTypes Type,
     string Name,
     uint EquippedItemCount,
     uint[] EquippedItems,
@@ -56,7 +55,7 @@ public record CharacterPreview(
 
         return new CharacterPreview(
             Level,
-            Type,
+            (CharacterTypes)Type,
             Name,
             EquippedItemCount,
             EquippedItems,
