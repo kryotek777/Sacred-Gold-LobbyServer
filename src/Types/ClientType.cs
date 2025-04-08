@@ -1,8 +1,10 @@
 namespace Lobby.Networking;
 
+[Flags]
 public enum ClientType
 {
-    Unknown,
-    User,
-    Server
+    None = 0,
+    Unknown = 1,
+    User = 2,
+    Server = 4
 }
