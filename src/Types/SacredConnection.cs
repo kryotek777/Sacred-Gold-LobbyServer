@@ -342,11 +342,7 @@ public class SacredConnection
             }
 
             // Is this packet allowed from this connection type?
-            if (
-                (!securityData.FromClient && ClientType == ClientType.User) ||
-                (!securityData.FromServer && ClientType == ClientType.Server) ||
-                (!securityData.FromUnknown && ClientType == ClientType.Unknown)
-            )
+            if (!securityData.AllowedClients.HasFlag(ClientType))
             {
                 Log.Error($"{Client.ClientName}: Packet {type} not allowed from this client of type {ClientType}!");
                 return;
