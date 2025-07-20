@@ -1,24 +1,17 @@
 # Sacred Gold Lobby Server
 
-This project is a reimplementation of the original lobby servers once used in the game "Sacred," developed by Ascaron Entertainment. The lobby servers maintained lists of official and community-run game servers, allowing clients to discover and connect to available game rooms. This reimplementation aims to bring back that functionality, letting players find and join active servers for multiplayer gameplay.
+Play online with your friends, make new allies and slain your foes in the world of Ancaria!  
+This project brings back the online functionality of Sacred like it's 2007 again, with some modern tweaks.  
+It allows the clients and servers to find each other, saves your characters, allows players to chat with each other, all while being 100% compatible with vanilla clients.
 
-## Overview
-
-- **OpenNet**: Use your local characters to play online.  
-- **ClosedNet**: Have your characters stored on the lobby, preventing edited or cheated saves for fair play. *(Currently, only the public instance has ClosedNet servers; self-hosted ClosedNet is not yet available.)*  
-- **Server List**: GameServers can register themselves with the lobby, making them visible to players.  
-- **Lobby Chat**: Chat with other players, see characters in the lobby, and coordinate games.  
-- **Accounts**: Originally, registration happened on Ascaron's website; now, the lobby handles it all.  
-- **Hardcore Mode**: ClosedNet also supports hardcore characters—die once, lose your character forever!
-
----
+## Quick Start: "I just want to play!"
 
 > [!NOTE]
-> The mods SacredNL and PureHD are heavily advised because they have lots fixes for multiplayer and allow you to play at resolutions different from 1024x768.  
+> While this project is 100% vanilla compatible, the mods SacredNL and PureHD are heavily advised because they have lots fixes for multiplayer and allow you to play at resolutions different from 1024x768.  
 > With the vanilla game you need to set your speed to MODEM/ISDN instead of LAN, which will hide most of the ambient NPCs!  
 > This is done below while setting "NETWORK_SPEEDSETTINGS" of in the in-game UI  
 
-## Quick Start: "I Just Want to Play!"
+### Setup your game
 
 1. **Close the game** if it's already open.  
 2. **Open your Sacred installation folder** and locate the file `Settings.cfg`.  
@@ -39,20 +32,22 @@ This project is a reimplementation of the original lobby servers once used in th
     ```
     
 4. **Save** the file.
-5. **To play OpenNet**:
+
+### Choose a Game Mode
+
+**OpenNet**: Play online with your own local characters, so you can bring your offline progress to multiplayer.
    - Open Sacred
    - Go to **Multiplayer** → **Open Internet**,
    - (Optionally) **Register** or else **Choose any username, any password and any email** (the password and email aren't needed and will be ignored)
-   - **Log On**
-7. **To play ClosedNet**:
+     
+**ClosedNet**: Characters are stored on the lobby for portability and to prevent cheating. Also has hardcore mode!  
    - Download the [ClosedNet client](https://kryotek.net/sacred/assets/bin/SacredClosedNet.exe)
    - Place it in your Sacred installation folder and launch it
    - Go **Multiplayer** → **Closed Internet**
-   - **Register** (email not needed)
-   - **Log On**
-8. Select your character, and you’ll see the **server list**. Jump in and play!
+   - **Register** (the email field is ignored)
+   - **Login** with your new credentials
 
-*(If you want to learn more about OpenNet vs. ClosedNet, see the [FAQ](#faq) below.)*
+Now just select your character, and you’ll see the **server list**. Jump in and play!
 
 > [!NOTE]
 > Sacred has an **anti-flood system** that delays messages if you send more than one every two seconds. After you exceed this rate, new messages get cached until the timer resets, and then they all get sent at once. So, **type slowly** in the lobby chat to avoid getting flood-blocked!
@@ -83,55 +78,17 @@ If you want full control over the lobby and game servers:
 
 ### Client Configuration
 
-Clients need to modify their own `Settings.cfg`:
+Clients are set up in the same way as with the public instance (explained above), with the exception that the variable NETWORK_LOBBY needs to point to your server's IP address.
 
-```ini
-NETWORK_LOBBY : <your public IP or 127.0.0.1 if on the same PC>
-NETWORK_LOBBYPORT : 7066
-NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC
-NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9
-```
-
-Then they can connect via **Multiplayer** → **Open Internet**, picking any username/password.  
+Then they can connect via **Multiplayer** → **Open Internet**, picking any username/password.
 
 ---
-
-## FAQ <a id="faq"></a>
-
-### What Are the Different Game Modes?
-
-- **OpenNet**: Play online with your own local characters. You can edit them on your PC, so it’s more casual.  
-- **ClosedNet**: Characters are stored on the lobby. This prevents cheating and ensures a fair, competitive environment.  
-
-### How Do I Play in ClosedNet?
-
-Currently, **ClosedNet** requires registration (the email field is ignored) and is only available on the **public instance** of the lobby. You **cannot self-host ClosedNet** yet. To play ClosedNet:
-
-1. Download the [ClosedNet client](https://kryotek.net/sacred/assets/bin/SacredClosedNet.exe).  
-2. Place `SacredClosedNet.exe` in your Sacred folder.  
-3. Modify your `Settings.cfg` like in the Quick Start section.  
-4. Run the **ClosedNet client**, register or log in with your credentials.  
-5. Enjoy fair play without the worry of cheated characters!
 
 ### Is There a Discord for Support?
 
 Yes! Join us for help, to meet other players, and to share tips and experiences.  
 [English/International](https://discord.gg/Duu4B8tgjv)  
 [Italian](https://discord.gg/tnT4eYVf)  
-
----
-
-## Contributing
-
-Contributions are welcome! If you’d like to help out, please fork the repository, make your changes, and submit a pull request.
-
-You can directly support the project using [GitHub sponsors](https://github.com/sponsors/kryotek777) or [PayPal](https://paypal.me/kryotek777)
-
----
-
-## License
-
-This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -145,3 +102,15 @@ To the amazing Discord communities and all the testers - your help with debuggin
 To Ascaron Entertainment, for creating Sacred and sparking the inspiration for this reimplementation.
 
 And finally to you, thanks for playing with us! <3
+
+## Contributing
+
+Contributions are welcome! If you’d like to help out, please fork the repository, make your changes, and submit a pull request.
+
+You can directly support the project using [GitHub sponsors](https://github.com/sponsors/kryotek777) or [PayPal](https://paypal.me/kryotek777)
+
+---
+
+## License
+
+This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for details.
