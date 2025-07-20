@@ -2,11 +2,6 @@
 
 This project is a reimplementation of the original lobby servers once used in the game "Sacred," developed by Ascaron Entertainment. The lobby servers maintained lists of official and community-run game servers, allowing clients to discover and connect to available game rooms. This reimplementation aims to bring back that functionality, letting players find and join active servers for multiplayer gameplay.
 
-> [!NOTE]
-> Sacred has an **anti-flood system** that delays messages if you send more than one every two seconds. After you exceed this rate, new messages get cached until the timer resets, and then they all get sent at once. So, **type slowly** in the lobby chat to avoid getting flood-blocked!
-
----
-
 ## Overview
 
 - **OpenNet**: Use your local characters to play online.  
@@ -18,20 +13,31 @@ This project is a reimplementation of the original lobby servers once used in th
 
 ---
 
+> [!NOTE]
+> The mods SacredNL and PureHD are heavily advised because they have lots fixes for multiplayer and allow you to play at resolutions different from 1024x768.  
+> With the vanilla game you need to set your speed to MODEM/ISDN instead of LAN, which will hide most of the ambient NPCs!  
+> This is done below while setting "NETWORK_SPEEDSETTINGS" of in the in-game UI  
+
 ## Quick Start: "I Just Want to Play!"
 
 1. **Close the game** if it's already open.  
 2. **Open your Sacred installation folder** and locate the file `Settings.cfg`.  
 3. **Modify** the following lines (using a text editor like Notepad):
-
     ```ini
     NETWORK_CDKEY : AMVW2Y3MF2OTBTSS9TLC
     NETWORK_CDKEY2 : 3L4FLSIRGBQS8BTCMGE9
     NETWORK_LOBBY : 94.16.105.70
     NETWORK_LOBBYPORT : 7066
+    ```
+    **If playing with SacredNL and PureHD add the following line**:
+    ```ini
+    NETWORK_SPEEDSETTINGS : 2
+    ```
+    **If you're playing without any mods, write this instead**
+    ```ini
     NETWORK_SPEEDSETTINGS : 1
     ```
-
+    
 4. **Save** the file.
 5. **To play OpenNet**:
    - Open Sacred
@@ -47,6 +53,9 @@ This project is a reimplementation of the original lobby servers once used in th
 8. Select your character, and you’ll see the **server list**. Jump in and play!
 
 *(If you want to learn more about OpenNet vs. ClosedNet, see the [FAQ](#faq) below.)*
+
+> [!NOTE]
+> Sacred has an **anti-flood system** that delays messages if you send more than one every two seconds. After you exceed this rate, new messages get cached until the timer resets, and then they all get sent at once. So, **type slowly** in the lobby chat to avoid getting flood-blocked!
 
 ---
 
@@ -106,26 +115,9 @@ Currently, **ClosedNet** requires registration (the email field is ignored) and 
 
 ### Is There a Discord for Support?
 
-Yes! Join us on the [Sacred International Discord](https://discord.gg/Duu4B8tgjv) for help, to meet other players, and to share tips and experiences.
-
----
-
-## Building
-
-To get started with this reimplementation:
-
-1. **Clone the Repository**  
-   ```bash
-   git clone https://github.com/kryotek777/Sacred-Gold-LobbyServer.git
-   ```
-2. **Build the Project**  
-   ```bash
-   dotnet build
-   ```
-3. **Run the Lobby Server**  
-   ```bash
-   dotnet run
-   ```
+Yes! Join us for help, to meet other players, and to share tips and experiences.  
+[English/International](https://discord.gg/Duu4B8tgjv)  
+[Italian](https://discord.gg/tnT4eYVf)  
 
 ---
 
@@ -144,6 +136,12 @@ This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) f
 ---
 
 ## Acknowledgements
+Heartfelt thanks to everyone who made this project possible:
 
-Special thanks to Ascaron Entertainment for creating Sacred and inspiring this reimplementation.  
-Huge thanks to **Sacred Tribute**, the **Discord communities**, and all testers who helped with debugging and experimenting. Your support is invaluable! 
+To Zerisius, DarkHack, William Tokarev, DavideEDN, and many other friends who made all of this possible and supported me along the way.
+
+To the amazing Discord communities and all the testers - your help with debugging, experimentation, ideas and encouragement has been truly invaluable.
+
+To Ascaron Entertainment, for creating Sacred and sparking the inspiration for this reimplementation.
+
+And finally to you, thanks for playing with us! <3
