@@ -28,8 +28,9 @@ public class Config
     public bool SkipSecurityChecks { get; set; }
     public bool CollectStatistics { get; set; } 
     public bool EnableWebApi { get; set; }
-    public bool EnableSwagger { get; set; }
     public string WebApiUrl { get; set; } 
+    public bool EnableSwagger { get; set; }
+    public bool EnableWebPanel { get; set; }
 
     public Config()
     {

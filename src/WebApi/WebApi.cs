@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
 using Lobby.DB;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +14,20 @@ namespace Lobby.Api;
 public static partial class WebApi
 {
     private static readonly string ApiVersion = "1.0.0";
+    private const string WebPanelFolder = "WebPanel";
 
     public static async Task Run(string url, CancellationToken token)
     {
         try
         {
-            var builder = WebApplication.CreateBuilder();
+            string contentPath = AppContext.BaseDirectory;
+            string webRootPath = Path.Combine(AppContext.BaseDirectory, WebPanelFolder);
+
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                ContentRootPath = contentPath,
+                WebRootPath = webRootPath
+            });
 
             // Prevent default ASP.NET Core logging from clogging the console
             builder.Logging.ClearProviders();
@@ -28,7 +38,7 @@ public static partial class WebApi
                 options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
-            if(Config.Instance.EnableSwagger)
+            if (Config.Instance.EnableSwagger)
             {
                 // Add metadata about the minimal API methods
                 builder.Services.AddEndpointsApiExplorer();
@@ -57,6 +67,11 @@ public static partial class WebApi
                 });
             }
 
+            if (Config.Instance.EnableWebPanel)
+            {
+                webApp.UseFileServer();
+            }
+
             // ---[ Generic ]---
             webApp.MapGet("/api/health", Healthcheck).WithTags("Generic");
             webApp.MapGet("/api/version", Version).WithTags("Generic");
@@ -81,12 +96,12 @@ public static partial class WebApi
             webApp.MapGet("/api/statistics/runtime", () => Statistics.Runtime.TotalSeconds).WithTags("Statistics");
             webApp.MapGet("/api/statistics/average-packet-processing-time", () => Statistics.AveragePacketProcessingTime.TotalMilliseconds).WithTags("Statistics");
 
-            // If a page is not mapped, fall back to this handler
-            webApp.MapFallback(Fallback);
-
             await webApp.StartAsync();
 
             Log.Info($"WebApi started on {url}");
+
+            if (Config.Instance.EnableWebPanel)
+                Log.Info($"WebPanel enabled");
 
             await webApp.WaitForShutdownAsync(token);
         }

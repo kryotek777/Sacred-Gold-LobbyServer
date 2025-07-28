@@ -74,12 +74,16 @@ CollectStatistics = true
 # it is meant for local control panels or website backends ONLY
 EnableWebApi = false
 
+# The URL on which the WebApi server will listen
+WebApiUrl = "http://localhost:5000"
+
 # Enable the Swagger UI for the WebApi server
 # This contains all the endpoints present in the server, you can find it at /swagger
 EnableSwagger = false
 
-# The URL on which the WebApi server will listen
-WebApiUrl = "http://localhost:5000"
+# Enable the WebPanel for the WebApi server
+# This will serve all the files in the folder ./WebPanel on the endpoint specified by WebApiUrl
+EnableWebPanel = true
 
 # The following is the channel list that's visible in closednet
 # WARNING: Ensure there's always a channel with ID=6 with no flags, that's dedicated for OpenNet and hardcoded in the game!

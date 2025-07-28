@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LobbyServer Control Panel</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: #222;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            flex: 1;
+        }
+
+        nav button {
+            background: none;
+            border: none;
+            color: #bbb;
+            font-size: 1rem;
+            margin-left: 1rem;
+            cursor: pointer;
+        }
+
+        nav button.active {
+            color: white;
+            border-bottom: 2px solid white;
+        }
+
+        main {
+            flex: 1;
+            overflow: auto;
+            padding: 1rem;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* Statistics grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: #f0f0f0;
+            padding: .75rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-card h2 {
+            margin: .5rem 0 0;
+            font-size: 1.5rem;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-all;
+        }
+
+        /* Accounts */
+        #account-controls {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        #accountSearch {
+            flex: 1;
+            padding: .5rem;
+        }
+
+        button {
+            padding: .5rem 1rem;
+            border: 1px solid #888;
+            background: #eee;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #ddd;
+        }
+
+        .account-card {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            padding: .75rem;
+        }
+
+        .chars {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .slot {
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            padding: .5rem;
+            width: 120px;
+            font-size: .9rem;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .slot.empty {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>LobbyServer Control Panel</h1>
+        <nav>
+            <button id="tab-statistics" class="active">Statistics</button>
+            <button id="tab-accounts">Accounts</button>
+        </nav>
+    </header>
+    <main>
+        <!-- Statistics -->
+        <section id="statistics" class="panel active">
+            <h2>Live Server Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div>Servers</div>
+                    <h2 id="s-servers">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Users</div>
+                    <h2 id="s-users">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Bytes Recv.</div>
+                    <h2 id="s-bytes-received">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Bytes Sent</div>
+                    <h2 id="s-bytes-sent">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Pkts Recv.</div>
+                    <h2 id="s-packets-received">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Pkts Sent</div>
+                    <h2 id="s-packets-sent">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Uptime</div>
+                    <h2 id="s-runtime">–</h2>
+                </div>
+                <div class="stat-card">
+                    <div>Avg Proc Time</div>
+                    <h2 id="s-avg-packet">–</h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accounts -->
+        <section id="accounts" class="panel">
+            <h2>Account Management & Character View</h2>
+            <div id="account-controls">
+                <input type="text" id="accountSearch" placeholder="Search by name…">
+                <button id="clearSearch">Show All</button>
+            </div>
+            <div id="accountsContainer"></div>
+        </section>
+    </main>
+
+    <script>
+        // Tab switching
+        document.getElementById('tab-statistics').onclick = () => showPanel('statistics');
+        document.getElementById('tab-accounts').onclick = () => showPanel('accounts');
+        function showPanel(id) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            document.getElementById(id).classList.add('active');
+
+            // if we're showing statistics, force a refresh
+            if (id === 'statistics') {
+                loadStats();
+            }
+        }
+
+        // Stats
+        async function loadStats() {
+            try {
+                let r = await fetch('/api/statistics');
+                let d = await r.json();
+                let uptime = new Date(d.runtime * 1000).toISOString().slice(11, 19);
+                let packet = `${d.averagePacketProcessingTime.toFixed(2)}ms`;
+                document.getElementById('s-servers').textContent = d.servers;
+                document.getElementById('s-users').textContent = d.users;
+                document.getElementById('s-bytes-received').textContent = d.bytesReceived;
+                document.getElementById('s-bytes-sent').textContent = d.bytesSent;
+                document.getElementById('s-packets-received').textContent = d.packetsReceived;
+                document.getElementById('s-packets-sent').textContent = d.packetsSent;
+                document.getElementById('s-runtime').textContent = uptime;
+                document.getElementById('s-avg-packet').textContent = packet;
+            } catch (e) {
+                console.error('Stats error', e);
+            }
+        }
+        loadStats();
+        setInterval(loadStats, 1000);
+
+        // Accounts
+        const cont = document.getElementById('accountsContainer');
+        async function fetchAccounts(name = '') {
+            cont.innerHTML = '<p>Loading…</p>';
+            let url, opts;
+            if (name.trim()) {
+                url = '/api/accounts/search?name=' + encodeURIComponent(name);
+            } else {
+                url = '/api/accounts/all';
+            }
+            try {
+                let r = await fetch(url, opts);
+                let idsOrAccounts = await r.json();
+                if (!name.trim()) {
+                    // got IDs
+                    let cards = await Promise.all(idsOrAccounts.map(id => fetch('/api/accounts/' + id).then(r => r.json())));
+                    renderAccounts(cards);
+                } else {
+                    renderAccounts(idsOrAccounts);
+                }
+            } catch (e) {
+                cont.innerHTML = `<p>Error loading accounts.</p>`;
+                console.error(e);
+            }
+        }
+        function renderAccounts(list) {
+            if (!list.length) {
+                cont.innerHTML = '<p>No accounts found.</p>';
+                return;
+            }
+            cont.innerHTML = '';
+            list.forEach(acc => {
+                let card = document.createElement('div');
+                card.className = 'account-card';
+                card.innerHTML = `
+          <strong>ID:</strong> ${acc.id}<br>
+          <strong>Username:</strong> ${acc.username || '–'}<br>
+          <strong>Name:</strong> ${acc.name || '–'}<br>
+          <div class="chars" id="chars-${acc.id}"></div>
+        `;
+                cont.appendChild(card);
+                loadChars(acc.id);
+            });
+        }
+        async function loadChars(id) {
+            let container = document.getElementById('chars-' + id);
+            for (let slot = 1; slot <= 8; slot++) {
+                let el = document.createElement('div');
+                el.className = 'slot';
+                el.textContent = `Slot ${slot}: …`;
+                container.appendChild(el);
+                try {
+                    let r = await fetch(`/api/accounts/${id}/characters/${slot}`);
+                    if (r.status === 404) {
+                        el.textContent = `Slot ${slot}: Empty`;
+                        el.classList.add('empty');
+                    } else {
+                        let c = await r.json();
+                        el.innerHTML =
+                            `<strong>${c.name}</strong><br>` +
+                            `${c.type}<br>` +
+                            `Level ${c.level}<br>` +
+                            `EXP ${c.experience}<br>` +
+                            `Gold ${c.gold}`;
+                    }
+                } catch {
+                    el.textContent = `Slot ${slot}: Error`;
+                    el.classList.add('empty');
+                }
+            }
+        }
+
+        // Search-on-type + clear
+        const inp = document.getElementById('accountSearch');
+        inp.addEventListener('input', () => fetchAccounts(inp.value));
+        document.getElementById('clearSearch').onclick = () => {
+            inp.value = '';
+            fetchAccounts();
+        };
+
+        // initial load
+        fetchAccounts();
+    </script>
+</body>
+
+</html>

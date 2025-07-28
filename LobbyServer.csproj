@@ -29,4 +29,13 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="CopyWebPanel" AfterTargets="Build">
+    <ItemGroup>
+      <WebFiles Include="src/WebApi/WebPanel\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WebFiles)"
+          DestinationFolder="$(TargetDir)WebPanel\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+  
 </Project>
