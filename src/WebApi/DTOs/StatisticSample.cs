@@ -7,6 +7,6 @@ internal record StatisticSample(
     ulong BytesSent,
     ulong PacketsReceived,
     ulong PacketsSent,
-    TimeSpan Runtime,
-    TimeSpan AveragePacketProcessingTime
+    double Runtime,
+    double AveragePacketProcessingTime
 );

@@ -66,8 +66,8 @@ public static partial class WebApi
             webApp.MapGet("/api/accounts/by-name/{name}", GetAccountByName).WithTags("Accounts");
             webApp.MapGet("/api/accounts/{id}", GetAccountById).WithTags("Accounts");
             webApp.MapGet("/api/accounts/{id}/characters/{saveId}", GetAccountCharacter).WithTags("Accounts");
-            
-            webApp.MapPost("/api/accounts/search/", SearchAccount).WithTags("Accounts");
+
+            webApp.MapGet("/api/accounts/search/", SearchAccount).WithTags("Accounts");
 
             // ---[ Statistics ]---
             webApp.MapGet("/api/statistics", AllStatistics).WithTags("Statistics");
@@ -78,8 +78,8 @@ public static partial class WebApi
             webApp.MapGet("/api/statistics/bytes-sent", () => Statistics.BytesSent).WithTags("Statistics");
             webApp.MapGet("/api/statistics/packets-received", () => Statistics.PacketsReceived).WithTags("Statistics");
             webApp.MapGet("/api/statistics/packets-sent", () => Statistics.PacketsSent).WithTags("Statistics");
-            webApp.MapGet("/api/statistics/runtime", () => Statistics.Runtime).WithTags("Statistics");
-            webApp.MapGet("/api/statistics/average-packet-processing-time", () => Statistics.AveragePacketProcessingTime).WithTags("Statistics");
+            webApp.MapGet("/api/statistics/runtime", () => Statistics.Runtime.TotalSeconds).WithTags("Statistics");
+            webApp.MapGet("/api/statistics/average-packet-processing-time", () => Statistics.AveragePacketProcessingTime.TotalMilliseconds).WithTags("Statistics");
 
             // If a page is not mapped, fall back to this handler
             webApp.MapFallback(Fallback);
@@ -138,8 +138,8 @@ public static partial class WebApi
             Statistics.BytesSent,
             Statistics.PacketsReceived,
             Statistics.PacketsSent,
-            Statistics.Runtime,
-            Statistics.AveragePacketProcessingTime
+            Statistics.Runtime.TotalSeconds,
+            Statistics.AveragePacketProcessingTime.TotalSeconds
         );
     }
 
