@@ -26,6 +26,7 @@ public class Config
     public bool AllowAnonymousLogin { get; set;}
     public List<ChannelInfo> Channels { get; set; }
     public bool SkipSecurityChecks { get; set; }
+    public bool StrictMode { get; set; }
     public bool CollectStatistics { get; set; } 
     public bool EnableWebApi { get; set; }
     public string WebApiUrl { get; set; } 

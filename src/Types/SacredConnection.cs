@@ -310,10 +310,12 @@ public class SacredConnection
 
         if (!Config.Instance.SkipSecurityChecks)
         {
-
             // Wrong module id
             if (moduleId != ModuleId)
             {
+                if (Config.Instance.StrictMode)
+                    Stop();
+
                 Log.Error($"{Client.ClientName}: Wrong module id {moduleId:X}!");
                 return;
             }

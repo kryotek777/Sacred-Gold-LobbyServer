@@ -66,20 +66,23 @@ AllowAnonymousLogin = true
 # Useful with misbehaving mods
 SkipSecurityChecks = false
 
+# Aggressively kicks misbehaving clients
+StrictMode = true
+
 # Collect performance statistics
 CollectStatistics = true
 
 # Enable the WebApi server
 # WARNING: This is not intended to be public, DO NOT EXPOSE THE WEBAPI PORT TO THE INTERNET!
 # it is meant for local control panels or website backends ONLY
-EnableWebApi = false
+EnableWebApi = true
 
 # The URL on which the WebApi server will listen
 WebApiUrl = "http://localhost:5000"
 
 # Enable the Swagger UI for the WebApi server
 # This contains all the endpoints present in the server, you can find it at /swagger
-EnableSwagger = false
+EnableSwagger = true
 
 # Enable the WebPanel for the WebApi server
 # This will serve all the files in the folder ./WebPanel on the endpoint specified by WebApiUrl
