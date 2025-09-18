@@ -11,6 +11,8 @@ It allows the clients and servers to find each other, saves your characters, all
 > With the vanilla game you need to set your speed to MODEM/ISDN instead of LAN, which will hide most of the ambient NPCs!  
 > This is done below while setting "NETWORK_SPEEDSETTINGS" of in the in-game UI  
 
+This section will explain how to join the public instance that's maintained and paid for by the great community [on the discord server!](https://discord.gg/Duu4B8tgjv)
+
 ### Setup your game
 
 1. **Close the game** if it's already open.  
@@ -55,6 +57,9 @@ Now just select your character, and you’ll see the **server list**. Jump in an
 ---
 
 ## Self-Hosting Your Own Lobby
+
+> [!NOTE]
+> The ClosedNet servers are part of a separate project and are currently only available in the public instance.
 
 If you want full control over the lobby and game servers:
 
