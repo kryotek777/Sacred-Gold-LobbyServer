@@ -1,7 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Text.Json;
 using Lobby.Types.Messages;
 using Tomlyn;
+using Tomlyn.Serialization;
 
 namespace Lobby;
 
@@ -64,26 +66,13 @@ public class Config
             {
                 var text = File.ReadAllText(configPath);
 
-                var options = new TomlModelOptions()
+                var options = new TomlSerializerOptions()
                 {
-                    //Don't convert names to snake_case (Yeah. It does by default.)
-                    ConvertPropertyName = (x) => x,
-
-                    //Custom parser for IpAddress
-                    ConvertToModel = (src, type) =>
-                    {
-                        if (type == typeof(IPAddress) && src is string str)
-                        {
-                            return IPAddress.Parse(str);
-                        }
-                        else
-                        {
-                            return null;
-                        }
-                    }
+                      DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                      Converters = [ new TomlIpConverter() ]
                 };
 
-                Instance = Toml.ToModel<Config>(text, options: options);
+                Instance = TomlSerializer.Deserialize<Config>(text, options)!;
 
                 // Without persistent data we can't restrict logins, the lobby would be useless
                 if(Instance.StorePersistentData == false)
@@ -133,5 +122,20 @@ public class Config
         }
 
         Channels = newList;
+    }
+
+    private sealed class TomlIpConverter : TomlConverter<IPAddress>
+    {
+        public override IPAddress? Read(TomlReader reader)
+        {
+            var value = reader.GetString();
+            reader.Read();
+            return IPAddress.Parse(value);
+        }
+
+        public override void Write(TomlWriter writer, IPAddress value)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
     }
 }
