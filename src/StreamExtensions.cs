@@ -23,7 +23,7 @@ public static class StreamExtensions
     public static byte ReadByte(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(byte)];
-        stream.Read(buffer);
+        stream.ReadExactly(buffer);
         return buffer[0];
     }
 
@@ -38,7 +38,7 @@ public static class StreamExtensions
     public static short ReadInt16(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(short)];
-        stream.Read(buffer);
+        stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt16LittleEndian(buffer);
     }
 
@@ -53,7 +53,7 @@ public static class StreamExtensions
     public static ushort ReadUInt16(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];
-        stream.Read(buffer);
+        stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadUInt16LittleEndian(buffer);
     }
 
@@ -68,7 +68,7 @@ public static class StreamExtensions
     public static int ReadInt32(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(int)];
-        stream.Read(buffer);
+        stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadInt32LittleEndian(buffer);
     }
 
@@ -83,7 +83,7 @@ public static class StreamExtensions
     public static uint ReadUInt32(this Stream stream)
     {
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
-        stream.Read(buffer);
+        stream.ReadExactly(buffer);
         return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
     }
 
