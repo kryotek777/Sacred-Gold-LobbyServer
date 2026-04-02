@@ -1,7 +1,4 @@
-using System.Configuration;
-using System.Data.Entity;
 using System.Diagnostics;
-using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using Lobby.Types;
 
