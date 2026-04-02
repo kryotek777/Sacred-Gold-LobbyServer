@@ -43,7 +43,7 @@ This section will explain how to join the public instance that's maintained and 
    - (Optionally) **Register** or else **Choose any username, any password and any email** (the password and email aren't needed and will be ignored)
      
 **ClosedNet**: Characters are stored on the lobby for portability and to prevent cheating. Also has hardcore mode!  
-   - Download the [ClosedNet client](https://kryotek.net/sacred/assets/bin/SacredClosedNet.exe)
+   - Download the [ClosedNet client](https://github.com/kryotek777/Sacred-Gold-LobbyServer/blob/main/assets/SacredClosedNet.exe)
    - Place it in your Sacred installation folder and launch it
    - Go **Multiplayer** → **Closed Internet**
    - **Register** (the email field is ignored)
