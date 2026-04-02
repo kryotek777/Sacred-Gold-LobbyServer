@@ -9,6 +9,7 @@ public static class InteractiveConsole
 {
     private static readonly Command _exitCommand = new Command(null!, "Exit the interactive console");
     private static List<Command> _commands = new();
+    private static CancellationToken _token = default;
 
     public static void Initialize()
     {
@@ -24,6 +25,8 @@ public static class InteractiveConsole
 
     public static void Run(CancellationToken cancToken)
     {
+        _token = cancToken;
+
         while (!cancToken.IsCancellationRequested)
         {
             try
@@ -61,6 +64,10 @@ public static class InteractiveConsole
             catch (TaskCanceledException)
             {
                 throw;
+            }
+            catch(OperationCanceledException)
+            {
+                break;
             }
             catch (Exception ex)
             {
@@ -173,7 +180,15 @@ public static class InteractiveConsole
 
     private static void WaitForEnter()
     {
-        Console.ReadLine();
+        while (true)
+        {
+            if(Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Enter)
+                return;
+            else
+                _token.ThrowIfCancellationRequested();
+
+            Thread.Sleep(50);
+        }
     }
 }
 
